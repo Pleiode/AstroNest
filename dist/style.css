@@ -1,0 +1,34 @@
+
+
+
+body {
+    margin: 0;
+    background-color: #EEF3FA;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+}
+
+
+.container {
+    background-color: white;
+    border-radius: 16px;
+    height: 87vh;
+    overflow: auto;
+    padding: 15px;
+}
+
+button {
+    display: flex;
+    padding: 8px 16px;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    border-radius: 12px;
+    background: #4C21FC;
+    color: white;
+    border: none;
+    font-family: 'Roboto';
+}
