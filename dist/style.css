@@ -1,34 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
 
 
 
 body {
     margin: 0;
-    background-color: #EEF3FA;
+    background-color: #F7F9FC;
+    font-family: 'Roboto';
+}
+
+.navbar {
+    border-right: 1px solid #E2E8EF;
+
 }
 
 header {
     display: flex;
     justify-content: space-between;
+    border-bottom: 1px solid #E2E8EF;
+    padding-block: 12px;
+    padding-inline: 16px;
+
+}
+
+
+button.secondary {
+    display: flex;
+    padding: 8px 14px;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Roboto';
+    border-radius: 16px;
+    border: 1px solid #C8CFD8;
+    background: #F7F9FC;
+    cursor: pointer;
+    font-weight: 400;
+    transition: 0.2s;
+    color: #3A3A3A;
+}
+
+
+select {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background: transparent;
+    display: flex;
+    padding: 8px 12px;
+    align-items: center;
+    gap: 12px;
+    border-radius: 10px;
+    border: 1px solid #C8CFD8;
+    font-family: 'Roboto';
+    color: #3A3A3A;
+    background-position-y: 5px;
+
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-down'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+    background-repeat: no-repeat;
+    background-position-x: 95%;
+    background-position-y: 4px;
+    padding-right: 2rem;
+    outline: none;
+}
+
+select:hover {
+    transition: 0.2s;
+    background-color: #ECF0F5;
+}
+
+select:active {
+    transition: 0.2s;
+    background-color: #E4E2FB;
+}
+
+
+button.secondary:hover {
+    transition: 0.2s;
+    background-color: #ECF0F5;
+}
+
+button.secondary:active {
+    transition: 0.2s;
+    background-color: #E6E8FF;
+    border: 1px solid #BBBFF0;
+    scale: 0.98;
+}
+
+
+
+.search-input {
+    display: flex;
+    padding: 12px 24px;
+    border-radius: 40px;
+    border: 1px solid #C8CFD8;
+    background: #F7F9FC;
+    width: 100%;
+    outline: none;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"  viewBox="0 0 24 24" fill="none" stroke="%237D838C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+    background-repeat: no-repeat;
+    background-position: 20px center;
+    /* Ajustez selon vos préférences */
+    padding-left: 46px;
+    background-size: 18px;
+    font-size: 14px;
+    font-weight: 400;
+    font-family: 'Roboto';
+    transition: 0.2s;
+    min-width: 20%;
+    max-width: 50%;
+    box-sizing: border-box;
+}
+
+.search-input:focus {
+    transition: 0.2s;
+    box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.10);
+    background-size: 0px;
+    padding-left: 24px;
+    background-color: white;
+}
+
+.search-input:hover {
+    background-color: #ECF0F5;
+}
+
+.search-input:focus:hover {
+    background-color: white;
 }
 
 
 .container {
     background-color: white;
-    border-radius: 16px;
     height: 87vh;
     overflow: auto;
-    padding: 15px;
+    padding: 18px;
 }
 
-button {
+ul {
+    list-style-type: none;
+    padding: 10px;
+}
+
+.navbar-links {
     display: flex;
-    padding: 8px 16px;
-    justify-content: center;
+    flex-direction: column;
+    gap: 6px;
+}
+
+
+.navbar-links a.active {
+    background-color: #E6E8FF;
+    color: #3829E8;
+    transition: 0.2s;
+}
+
+
+.navbar-links a:hover {
+    background-color: #ECF0F5;
+}
+
+.navbar-links a:focus {
+    background-color: #E6E8FF;
+}
+
+.navbar-links a.active:hover {
+    background-color: #E6E8FF;
+}
+
+
+.navbar-links a {
+    white-space: nowrap;
+    display: flex;
+    color: #656A71;
+    font-family: Roboto;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+    border-radius: 10px;
+    text-decoration: none;
+    padding-block: 10px;
+    padding-inline: 12px;
+    padding-inline-end: 60px;
     align-items: center;
-    gap: 8px;
-    border-radius: 12px;
-    background: #4C21FC;
-    color: white;
-    border: none;
-    font-family: 'Roboto';
+    gap:10px;
+    transition: 0.2s;
+}
+
+
+
+
+
+.navbar-icon  {
+    width: 18px;
+}
+
+
+
+.image-container {
+    position: relative;
+}
+
+.image-overlay {
+    position: relative;
+}
+
+.image-checkbox {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: none;
+}
+
+.image-container:hover .image-checkbox,
+.image-checkbox:checked {
+    display: block;
 }

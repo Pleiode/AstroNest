@@ -9,14 +9,15 @@ const ImageDisplayAndUploader = () => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState({});
     const [uploadingImage, setUploadingImage] = useState({});
-    const [sortOrder, setSortOrder] = useState('date-asc');
+    const [sortOrder, setSortOrder] = useState('date-desc');
     const [objectSort, setObjectSort] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [checkedImages, setCheckedImages] = useState([]);
 
 
 
     useEffect(() => {
-        setSortOrder(objectSort === 'all' ? 'date-asc' : 'skyObject');
+        setSortOrder(objectSort === 'all' ? 'date-desc' : 'skyObject');
     }, [objectSort]);
 
 
@@ -190,6 +191,17 @@ const ImageDisplayAndUploader = () => {
         );
     };
 
+    const toggleImageCheck = (imageId) => {
+        setCheckedImages(prevChecked => {
+            if (prevChecked.includes(imageId)) {
+                return prevChecked.filter(id => id !== imageId);
+            } else {
+                return [...prevChecked, imageId];
+            }
+        });
+    };
+
+
 
     return (
         <div>
@@ -222,6 +234,18 @@ const ImageDisplayAndUploader = () => {
                             <option value="Star">Étoile</option>
                         </select>
                     </label>
+                    <label>
+
+                        <select value={objectSort} onChange={e => setObjectSort(e.target.value)}>
+
+                            <option value="all">Type de photo</option>
+                            <option value="Planet">Rendu</option>
+                            <option value="Star">Brut</option>
+                            <option value="Star">Dark</option>
+                            <option value="Star">Flat</option>
+                            <option value="Star">Offset</option>
+                        </select>
+                    </label>
                 </div>
 
 
@@ -230,19 +254,39 @@ const ImageDisplayAndUploader = () => {
 
 
 
+                {checkedImages.length > 0 && (
+                    <div className="action-bar">
+                        <button onClick={() => {
+                            checkedImages.forEach(id => handleDelete(id));
+                            setCheckedImages([]);
+                        }}>
+                            Supprimer définitivement
+                        </button>
+                    </div>
+                )}
+
+
+
                 <SkyObjectModal isOpen={skyObjectModalOpen} onClose={() => setSkyObjectModalOpen(false)} />
                 {Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key} style={{ marginBottom: '20px' }}>
-                        <p style={{ fontSize: '14px', fontWeight: '500' }}>{key}</p>
+                        <p style={{ fontSize: '14px', marginTop: '40px' }}>{key}</p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'left' }}>
                             {imgs.map(image => (
                                 <div key={image.id} className="image-container">
                                     <img src={image.path} alt={image.name} onClick={() => handleImageActions.click(image)} style={{ ...fadeIn, height: "200px", width: 'auto' }} />
-                                    <div className="image-actions">
-                                        <button onClick={() => handleDelete(image.id)}>Supprimer</button>
-                                    </div>
+
+                                    <input
+                                        type="checkbox"
+                                        className="image-checkbox"
+                                        checked={checkedImages.includes(image.id)}
+                                        onChange={() => toggleImageCheck(image.id)}
+                                    />
+
                                 </div>
                             ))}
+
+
                         </div>
                     </div>
                 ))}

@@ -1,13 +1,25 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Image as ImageIcon, Trash as TrashIcon } from 'react-feather';
 
 function Navbar() {
+  const { pathname } = useLocation();
+
   return (
     <nav className="navbar">
-    
       <ul className="navbar-links">
-        <li><a href="/">Mes photos</a></li>
-        <li><a href="/apropos">Explorer</a></li>
-        <li><a href="/services">Corbeille</a></li>
+        <li>
+          <Link to="/pictures" className={`nav-link ${pathname === "/pictures" ? 'active' : ''}`}>
+            <ImageIcon className='navbar-icon' />
+            Mes photos
+          </Link>
+        </li>
+        <li>
+          <Link to="/trash" className={`nav-link ${pathname === "/trash" ? 'active' : ''}`}>
+            <TrashIcon className='navbar-icon' />
+            Corbeille
+          </Link>
+        </li>
       </ul>
     </nav>
   );

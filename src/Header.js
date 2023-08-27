@@ -18,18 +18,18 @@ const Header = ({ searchTerm, onSearchChange, onImportClick }) => {
 
     return (
         <header>
-            <div className='container-header'>
-                <Search className="search-icon" strokeWidth={2} />
-                <input
-                    type="text"
-                    className="search-input"
-                    placeholder="Rechercher"
-                    value={searchTerm}
-                    onChange={e => onSearchChange(e.target.value)}
-                />
-            </div>
 
-            <button onClick={handleImportClick}>
+            <input
+                type="text"
+                className="search-input"
+                placeholder="Rechercher"
+                value={searchTerm}
+                onChange={e => onSearchChange(e.target.value)}
+            />
+
+
+
+            <button className='secondary' onClick={handleImportClick}>
                 <Upload strokeWidth={2} width={'16px'} /> Importer
             </button>
             <input
