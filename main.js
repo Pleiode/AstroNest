@@ -4,6 +4,7 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
+const { spawn } = require('child_process');
 // Obtenez le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
 // Définissez le chemin complet de votre base de données
@@ -13,12 +14,14 @@ console.log("Database path:", dbPath);
 let win;
 let db;
 
+
+
 function createWindow() {
     win = new BrowserWindow({
         width: 1100,
         height: 750,
-        minWidth: 500, // Minimum width of the window
-        minHeight: 400,
+        minWidth: 800, // Minimum width of the window
+        minHeight: 600,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true, // protège contre les attaques XSS
@@ -28,6 +31,27 @@ function createWindow() {
 
     win.loadFile('dist/index.html')
     createDatabase();
+
+    /*
+    win.webContents.on("devtools-opened", () => {
+        win.webContents.closeDevTools();
+    });
+    */
+
+    const python = spawn('python3', ['./predict.py']);
+
+    python.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+
+    python.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    python.on('close', (code) => {
+        console.log(`process exited with code ${code}`);
+    });
+
 }
 
 app.whenReady().then(createWindow)
@@ -51,7 +75,6 @@ app.on('will-quit', () => {
 
 
 function createDatabase() {
-    // Utilisez ce chemin pour initialiser votre base de données
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
             console.error("Error opening database:", err);
@@ -59,19 +82,33 @@ function createDatabase() {
         }
     });
 
-
     db.run(`CREATE TABLE IF NOT EXISTS images(
-    id INTEGER PRIMARY KEY,
-    name TEXT,
-    path TEXT,
-    skyObject TEXT,
-    date TEXT
-  )`, (err) => {
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        path TEXT,
+        skyObject TEXT,
+        objectType TEXT,
+        constellation TEXT,
+        AD TEXT,
+        DEC TEXT,
+        date TEXT,
+        location TEXT,
+        photoType TEXT,
+        resolution TEXT,
+        size REAL,
+        instrument TEXT,
+        opticalTube TEXT,
+        mount TEXT,
+        camera TEXT,
+        exposition TEXT
+    )`, (err) => {
         if (err) {
             console.error(err.message);
         }
     });
 }
+
+
 
 ipcMain.on("update-skyObject", (event, { imageId, skyObject }) => {
     db.run(`UPDATE images SET skyObject = ? WHERE id = ?`, [skyObject, imageId], function (err) {
@@ -84,6 +121,24 @@ ipcMain.on("update-skyObject", (event, { imageId, skyObject }) => {
         event.reply("update-skyObject-reply", { success: true });
     });
 });
+
+
+ipcMain.on("update-image-info", (event, updatedImage) => {
+    const { id, ...fields } = updatedImage;
+    const queryParams = Object.values(fields);
+    const queryFields = Object.keys(fields).map(field => `${field} = ?`).join(', ');
+
+    db.run(`UPDATE images SET ${queryFields} WHERE id = ?`, [...queryParams, id], function(err) {
+        if (err) {
+            console.error("Error updating image:", err.message);
+            event.reply("update-image-info-reply", { success: false });
+            return;
+        }
+        console.log(`Updated info for image with id ${id}`);
+        event.reply("update-image-info-reply", { success: true });
+    });
+});
+
 
 
 ipcMain.on("image-uploaded", (event, imagePath) => {
@@ -120,7 +175,7 @@ ipcMain.on("image-uploaded", (event, imagePath) => {
             }
 
             console.log("Raw EXIF DateTimeOriginal:", result.tags.DateTimeOriginal);
-            
+
         } catch (error) {
             console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
         }
@@ -162,4 +217,8 @@ ipcMain.on("delete-image", (event, id) => {
         event.reply("image-deleted", id);
     });
 });
+
+
+
+
 

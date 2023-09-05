@@ -5,7 +5,13 @@ import { createRoot } from 'react-dom/client';
 import ImageDisplay from './ImageDisplay';
 import Navbar from './Navbar';
 
+
+
+
+
 class App extends React.Component {
+
+  
   render() {
     return (
       <div style={{ display: 'flex' }}>

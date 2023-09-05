@@ -23,6 +23,10 @@ header {
 }
 
 
+
+
+
+
 button.secondary {
     display: flex;
     padding: 8px 14px;
@@ -180,7 +184,7 @@ ul {
     padding-inline: 12px;
     padding-inline-end: 60px;
     align-items: center;
-    gap:10px;
+    gap: 10px;
     transition: 0.2s;
 }
 
@@ -188,28 +192,232 @@ ul {
 
 
 
-.navbar-icon  {
+.navbar-icon {
     width: 18px;
 }
 
 
-
-.image-container {
-    position: relative;
-}
-
-.image-overlay {
-    position: relative;
-}
-
 .image-checkbox {
-    position: absolute;
-    top: 5px;
-    right: 5px;
     display: none;
 }
 
-.image-container:hover .image-checkbox,
-.image-checkbox:checked {
-    display: block;
+.custom-checkbox {
+    opacity: 0;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: rgba(255, 255, 255, 0.575);
+    border-radius: 50%;
+    /* rend la checkbox ronde */
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    transition: opacity 0.1s;
+    /* Transition pour une apparition en douceur */
+}
+
+
+
+.custom-checkbox::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 16px;
+    height: 16px;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%233829E8" viewBox="0 0 24 24"><path d="M9 21.5l-6.5-6.5 2.5-2.5 4 4L19 3l2.5 2.5L9 21.5z"/></svg>');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0;
+    transition: 0.1s;
+}
+
+.image-checkbox:checked+.custom-checkbox {
+    background-color: white;
+    /* Changer à la couleur bleue désirée */
+    opacity: 1;
+}
+
+.image-container {
+    cursor: pointer;
+}
+
+.image-container:hover .custom-checkbox {
+    opacity: 1;
+}
+
+.image-checkbox:checked+.custom-checkbox::before {
+    opacity: 1;
+    /* Affiche la coche bleue lorsque la checkbox est cochée */
+}
+
+
+.image-checkbox:checked+.custom-checkbox,
+.image-container:hover .custom-checkbox {
+    opacity: 1;
+}
+
+
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0);
+    /* noir semi-transparent */
+ 
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    /* pour s'assurer qu'il s'affiche par-dessus les autres éléments */
+}
+
+
+.selected-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+}
+
+
+.close-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: transparent;
+    /* noir semi-transparent */
+    color: #fff;
+    /* texte blanc */
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+    z-index: 10;
+    /* pour s'assurer qu'il s'affiche par-dessus l'image */
+    width: 50px;
+    height: 50px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.close-button:hover {
+    transition: 0.2s;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(255, 255, 255, 0.087);
+    /* noir semi-transparent */
+    border-radius: 30px;
+}
+
+.close-button:active {
+    transition: 0.2s;
+    background-color: rgba(255, 255, 255, 0.249);
+}
+
+.button-close-detail {
+    
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: transparent;
+    /* noir semi-transparent */
+    color: #fff;
+    /* texte blanc */
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 5px 10px;
+    cursor: pointer;
+    outline: none;
+    z-index: 10;
+    /* pour s'assurer qu'il s'affiche par-dessus l'image */
+    width: 50px;
+    height: 50px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+html,
+body,
+.image-modal,
+.modal-content {
+    height: 100%;
+}
+
+.details-section {
+    padding: 20px; /* Ajustez cette valeur selon vos besoins */
+}
+
+
+.image-modal .modal-content {
+    display: flex;
+    align-items: center;
+}
+
+.image-modal .image-section,
+.image-modal .details-section {
+  
+    transition: flex 0.3s ease;
+    background-color: white;
+    box-sizing: border-box;
+}
+
+.image-modal .image-section {
+    flex: 1;
+    /* Prend toute la largeur disponible par défaut */
+    background-color: black;
+}
+
+.image-modal .image-section.shrink {
+    flex: 0.7;
+    /* Réduit à 60% de la largeur quand les détails sont visibles */
+    background-color: black;
+}
+
+.image-modal .details-section {
+    flex: 0.3;
+    /* Prend 40% de la largeur quand visible */
+    height: 100%;
+    /* Prend toute la hauteur */
+    overflow-y: auto;
+}
+
+
+.image-modal img.selected-image {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100vh; /* hauteur maximale égale à la hauteur de la fenêtre */
+    object-fit: contain; /* maintient l'aspect ratio de l'image */
+    display: block; /* pour éviter les espaces blancs autour de l'image */
+    margin: auto; /* centre l'image horizontalement et verticalement */
+}
+
+.details-section p {
+    word-wrap: break-word;
+}
+
+
+.action-bar {
+    display: flex;
+    align-items: center;
+    background-color: #E5E8FF;
+    padding-block: 16px;
+    padding-inline: 24px;
+    justify-content: space-between;
+}
+
+
+.action-bar p {
+    font-size: 14px;
+    margin: 0;
+
 }
