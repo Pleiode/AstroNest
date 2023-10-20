@@ -1,80 +1,159 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { remote } = require('electron');
 const electron = require('electron');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
 const { spawn } = require('child_process');
-// Obtenez le chemin du dossier de données de l'utilisateur
+
+// Obtient le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
-// Définissez le chemin complet de votre base de données
+
+// Définit le chemin complet de votre base de données
 const dbPath = path.join(__dirname, 'Database.db');
 console.log("Database path:", dbPath);
 
 let win;
 let db;
 
-
-
 function createWindow() {
+    // Crée une nouvelle fenêtre du navigateur Electron
     win = new BrowserWindow({
         width: 1100,
         height: 750,
-        minWidth: 800, // Minimum width of the window
+        minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
+        titleBarStyle: 'hidden',
+        titleBarOverlay: true,
         webPreferences: {
             nodeIntegration: false,
-            contextIsolation: true, // protège contre les attaques XSS
-            preload: path.join(__dirname, 'preload.js') // utilisez un script de préchargement
-        }
-    })
+            contextIsolation: true, // Protège contre les attaques XSS
+            preload: path.join(__dirname, 'preload.js') // Utilise un script de préchargement
+        },
+    });
 
-    win.loadFile('dist/index.html')
+    // Charge le fichier HTML principal dans la fenêtre
+    win.loadFile('dist/index.html');
+
+    // Crée la base de données lors du lancement de l'application
     createDatabase();
 
-    /*
-    win.webContents.on("devtools-opened", () => {
-        win.webContents.closeDevTools();
-    });
-    */
-
-    const python = spawn('python3', ['./predict.py']);
-
-    python.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
+    // Gestionnaires d'événements pour les actions de fenêtre (minimiser, maximiser, fermer)
+    ipcMain.on('minimize-window', () => {
+        if (win) {
+            win.minimize();
+        }
     });
 
-    python.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
+    ipcMain.on('maximize-window', () => {
+        if (win) {
+            if (win.isMaximized()) {
+                win.restore();
+            } else {
+                win.maximize();
+            }
+        }
     });
 
-    python.on('close', (code) => {
-        console.log(`process exited with code ${code}`);
+    ipcMain.on('close-window', () => {
+        if (win) {
+            win.close();
+        }
     });
 
+    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
+    ipcMain.on("image-uploaded", (event, imagePath) => {
+        // Obtient le nom de fichier de l'image et l'extension du fichier
+        const imageName = path.basename(imagePath);
+        const fileExtension = path.extname(imagePath).toLowerCase();
+
+        // Initialise la date de la prise de vue à la date actuelle
+        let shotDate = new Date().toISOString();
+
+        // Si l'extension du fichier est .jpeg ou .jpg, tente de lire les métadonnées EXIF
+        if (fileExtension === '.jpeg' || fileExtension === '.jpg') {
+            try {
+                // Lit les métadonnées EXIF du fichier
+                const buffer = fs.readFileSync(imagePath);
+                const parser = exifParser.create(buffer);
+                const result = parser.parse();
+
+                // Si les métadonnées EXIF contiennent la date de prise de vue (DateTimeOriginal)
+                if (result && result.tags && result.tags.DateTimeOriginal) {
+                    // Si DateTimeOriginal est un nombre (timestamp Unix)
+                    if (typeof result.tags.DateTimeOriginal === "number") {
+                        const exifDate = new Date(result.tags.DateTimeOriginal * 1000); // Convertit le timestamp en millisecondes
+                        if (!isNaN(exifDate.getTime())) {
+                            shotDate = exifDate.toISOString();
+                        } else {
+                            console.error("Date des métadonnées EXIF invalide (après conversion):", result.tags.DateTimeOriginal);
+                        }
+                    }
+                    // Si DateTimeOriginal est sous forme de chaîne (format standard EXIF)
+                    else {
+                        const exifDate = new Date(result.tags.DateTimeOriginal);
+                        if (!isNaN(exifDate.getTime())) {  // Vérification que la date est valide
+                            shotDate = exifDate.toISOString();
+                        } else {
+                            console.error("Date des métadonnées EXIF invalide (format standard):", result.tags.DateTimeOriginal);
+                        }
+                    }
+                }
+
+                console.log("Raw EXIF DateTimeOriginal:", result.tags.DateTimeOriginal);
+
+            } catch (error) {
+                console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
+            }
+        }
+
+        // Insère les données de l'image dans la base de données
+        db.run(`INSERT INTO images(name, path, date) VALUES(?, ?, ?)`, [imageName, imagePath, shotDate], function (err) {
+            if (err) {
+                return console.log(err.message);
+            }
+            console.log(`A row has been inserted with rowid ${this.lastID}`);
+            // Envoie un événement "image-added" avec l'ID de la dernière image ajoutée
+            event.reply("image-added", this.lastID);
+        });
+    });
+
+    // Gestionnaire d'événements pour l'événement "get-images" envoyé depuis le processus de rendu
+    ipcMain.on("get-images", (event) => {
+        // Sélectionne toutes les images de la base de données triées par date décroissante
+        db.all(`SELECT * FROM images ORDER BY date DESC`, [], (err, rows) => {
+            if (err) {
+                throw err;
+            }
+            // Envoie les données des images au processus de rendu
+            event.reply("get-images-reply", rows);
+        });
+    });
+
+    // Gestionnaire d'événements pour l'événement "delete-image" envoyé depuis le processus de rendu
+    ipcMain.on("delete-image", (event, id) => {
+        // Supprime l'image avec l'ID spécifié de la base de données
+        db.run(`DELETE FROM images WHERE id = ?`, id, (err) => {
+            if (err) {
+                return console.log(err.message);
+            }
+            console.log(`Row(s) deleted ${this.changes}`);
+            // Envoie une confirmation que l'image a été supprimée
+            event.reply("image-deleted", id);
+        });
+    });
 }
 
-app.whenReady().then(createWindow)
+// Écoute l'événement "ready" de l'application et crée la fenêtre lorsqu'elle est prête
+app.whenReady().then(createWindow);
 
-app.on('window-all-closed', function () {
-    if (process.platform !== 'darwin') app.quit()
-})
+// Définit le nom de l'application
+app.setName('Eidos');
 
-app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-})
-
-app.on('will-quit', () => {
-    db.close((err) => {
-        if (err) {
-            console.error(err.message);
-        }
-        console.log('Closed the database connection.');
-    });
-});
-
-
+// Fonction pour créer la base de données s'il n'existe pas
 function createDatabase() {
+    // Ouvre la base de données ou la crée si elle n'existe pas
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) {
             console.error("Error opening database:", err);
@@ -82,6 +161,7 @@ function createDatabase() {
         }
     });
 
+    // Crée la table "images" si elle n'existe pas déjà
     db.run(`CREATE TABLE IF NOT EXISTS images(
         id INTEGER PRIMARY KEY,
         name TEXT,
@@ -108,117 +188,42 @@ function createDatabase() {
     });
 }
 
-
-
-ipcMain.on("update-skyObject", (event, { imageId, skyObject }) => {
-    db.run(`UPDATE images SET skyObject = ? WHERE id = ?`, [skyObject, imageId], function (err) {
+// Gestionnaire d'événements pour l'événement "update-Type" envoyé depuis le processus de rendu
+ipcMain.on("update-Type", (event, { imageId, photoType }) => {
+    // Met à jour le champ "photoType" de l'image avec l'ID spécifié dans la base de données
+    db.run(`UPDATE images SET photoType = ? WHERE id = ?`, [photoType, imageId], function (err) {
         if (err) {
             console.error("Error updating image:", err.message);
-            event.reply("update-skyObject-reply", { success: false });
+            // Envoie une réponse à l'événement "update-Type-reply" avec le statut de mise à jour
+            event.reply("update-Type-reply", { success: false });
             return;
         }
-        console.log(`Updated skyObject for image with id ${imageId}`);
-        event.reply("update-skyObject-reply", { success: true });
+        console.log(`Updated photoType for image with id ${imageId}`);
+        // Envoie une réponse à l'événement "update-Type-reply" avec le statut de mise à jour
+        event.reply("update-Type-reply", { success: true });
     });
 });
 
-
+// Gestionnaire d'événements pour l'événement "update-image-info" envoyé depuis le processus de rendu
 ipcMain.on("update-image-info", (event, updatedImage) => {
+    // Extrait l'ID et les champs mis à jour de l'objet d'image
     const { id, ...fields } = updatedImage;
     const queryParams = Object.values(fields);
+    // Crée la chaîne de requête pour la mise à jour des champs de l'image
     const queryFields = Object.keys(fields).map(field => `${field} = ?`).join(', ');
 
-    db.run(`UPDATE images SET ${queryFields} WHERE id = ?`, [...queryParams, id], function(err) {
+    // Met à jour les champs de l'image avec l'ID spécifié dans la base de données
+    db.run(`UPDATE images SET ${queryFields} WHERE id = ?`, [...queryParams, id], function (err) {
         if (err) {
             console.error("Error updating image:", err.message);
+            // Envoie une réponse à l'événement "update-image-info-reply" avec le statut de mise à jour
             event.reply("update-image-info-reply", { success: false });
             return;
         }
         console.log(`Updated info for image with id ${id}`);
+        // Envoie une réponse à l'événement "update-image-info-reply" avec le statut de mise à jour
         event.reply("update-image-info-reply", { success: true });
     });
 });
-
-
-
-ipcMain.on("image-uploaded", (event, imagePath) => {
-    const imageName = path.basename(imagePath);
-    const fileExtension = path.extname(imagePath).toLowerCase();
-
-    let shotDate = new Date().toISOString();
-
-    if (fileExtension === '.jpeg' || fileExtension === '.jpg') {
-        try {
-            const buffer = fs.readFileSync(imagePath);
-            const parser = exifParser.create(buffer);
-            const result = parser.parse();
-
-            if (result && result.tags && result.tags.DateTimeOriginal) {
-                // Si DateTimeOriginal est un nombre (timestamp Unix)
-                if (typeof result.tags.DateTimeOriginal === "number") {
-                    const exifDate = new Date(result.tags.DateTimeOriginal * 1000); // Convertir le timestamp en millisecondes
-                    if (!isNaN(exifDate.getTime())) {
-                        shotDate = exifDate.toISOString();
-                    } else {
-                        console.error("Date des métadonnées EXIF invalide (après conversion):", result.tags.DateTimeOriginal);
-                    }
-                }
-                // Si DateTimeOriginal est sous forme de chaîne (format standard EXIF)
-                else {
-                    const exifDate = new Date(result.tags.DateTimeOriginal);
-                    if (!isNaN(exifDate.getTime())) {  // Vérification que la date est valide
-                        shotDate = exifDate.toISOString();
-                    } else {
-                        console.error("Date des métadonnées EXIF invalide (format standard):", result.tags.DateTimeOriginal);
-                    }
-                }
-            }
-
-            console.log("Raw EXIF DateTimeOriginal:", result.tags.DateTimeOriginal);
-
-        } catch (error) {
-            console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
-        }
-    }
-
-    db.run(`INSERT INTO images(name, path, date) VALUES(?, ?, ?)`, [imageName, imagePath, shotDate], function (err) {
-        if (err) {
-            return console.log(err.message);
-        }
-        console.log(`A row has been inserted with rowid ${this.lastID}`);
-        event.reply("image-added", this.lastID);
-    });
-});
-
-
-
-
-// Listen for get images event from renderer process
-ipcMain.on("get-images", (event) => {
-    db.all(`SELECT * FROM images ORDER BY date DESC`, [], (err, rows) => {
-        if (err) {
-            throw err;
-        }
-        // Send images data back to renderer process
-        event.reply("get-images-reply", rows);
-    });
-});
-
-
-
-
-ipcMain.on("delete-image", (event, id) => {
-    db.run(`DELETE FROM images WHERE id = ?`, id, (err) => {
-        if (err) {
-            return console.log(err.message);
-        }
-        console.log(`Row(s) deleted ${this.changes}`);
-        // Send confirmation that the image was deleted
-        event.reply("image-deleted", id);
-    });
-});
-
-
-
 
 

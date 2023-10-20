@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useEffect, useCallback, useState } from "react";
 import { Link, useLocation } from 'react-router-dom';
 import { Image as ImageIcon, Trash as TrashIcon } from 'react-feather';
 
 function Navbar() {
   const { pathname } = useLocation();
 
+
   return (
     <nav className="navbar">
+
+  
+
       <ul className="navbar-links">
         <li>
           <Link to="/pictures" className={`nav-link ${pathname === "/pictures" ? 'active' : ''}`}>
             <ImageIcon className='navbar-icon' />
-            Mes photos
+            Photo Library
           </Link>
         </li>
         <li>

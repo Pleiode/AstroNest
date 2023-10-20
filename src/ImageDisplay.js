@@ -1,25 +1,31 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { CSSTransition } from 'react-transition-group';
 import Header from './Header';
-
+import ImportModal from "./ImportModal";
 import { ArrowLeft, X, Info } from 'react-feather';
 
 
 const ImageDisplayAndUploader = () => {
+    // State pour gérer les images, l'état de la modal d'importation, l'état de la modal d'image, l'image sélectionnée, etc.
     const [images, setImages] = useState([]);
-    const [skyObjectModalOpen, setSkyObjectModalOpen] = useState(false);
+    const [ImportModalOpen, setImportModalOpen] = useState(false);
     const [isModalOpen, setModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState({});
     const [uploadingImage, setUploadingImage] = useState({});
     const [sortOrder, setSortOrder] = useState('date-desc');
     const [objectSort, setObjectSort] = useState('all');
+    const [TypeSort, setTypeSort] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [checkedImages, setCheckedImages] = useState([]);
 
+
+    // Effet pour gérer le tri des images en fonction de l'objet sélectionné
     useEffect(() => {
         setSortOrder(objectSort === 'all' ? 'date-desc' : 'skyObject');
     }, [objectSort]);
 
+
+    // Fonction pour gérer l'envoi des fichiers d'image à l'IPCRenderer
     const handleImageUpload = useCallback((files) => {
         files.forEach(file => {
             const imagePath = file.path;
@@ -32,24 +38,27 @@ const ImageDisplayAndUploader = () => {
             setUploadingImage(currentUploadingImage);
             window.electron.ipcRenderer.send("image-uploaded", imagePath);
         });
-        setSkyObjectModalOpen(true);
+        setImportModalOpen(true);
     }, []);
 
+
+    // Fonction pour gérer la sélection de fichiers
     const handleFileSelected = (e) => {
         handleImageUpload(Array.from(e.target.files));
     };
 
+    // Fonction pour gérer le glisser-déposer d'images
     const onDrop = (e) => {
         e.preventDefault();
         handleImageUpload(Array.from(e.dataTransfer.files));
     };
 
+    // Fonction pour empêcher le glisser-déposer par défaut du navigateur
     const preventDrag = e => {
         e.preventDefault();
     };
 
-
-
+    // Fonction pour trier les images en fonction de l'ordre de tri sélectionné et du terme de recherche
     const sortedImages = () => {
         const sorted = [...images];
 
@@ -59,9 +68,6 @@ const ImageDisplayAndUploader = () => {
                 break;
             case 'date-desc':
                 sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
-                break;
-            case 'skyObject':
-                sorted.sort((a, b) => (a.skyObject || '').localeCompare(b.skyObject || ''));
                 break;
             default:
                 break;
@@ -78,7 +84,7 @@ const ImageDisplayAndUploader = () => {
     };
 
 
-
+    // Objet pour gérer les actions d'image (ouverture, fermeture, etc.)
     const handleImageActions = {
         click: (image) => {
             setSelectedImage(image);
@@ -91,6 +97,7 @@ const ImageDisplayAndUploader = () => {
     };
 
 
+    // CSS pour l'animation de fondu
     const fadeIn = {
         animationName: 'fadeIn',
         animationDuration: '0.5s'
@@ -100,6 +107,8 @@ const ImageDisplayAndUploader = () => {
 
     const handleDelete = id => window.electron.ipcRenderer.send("delete-image", id);
 
+
+    // Effet pour écouter les événements IPCRenderer et mettre à jour l'état des images
     useEffect(() => {
         const { ipcRenderer } = window.electron;
         ipcRenderer.send("get-images");
@@ -135,6 +144,7 @@ const ImageDisplayAndUploader = () => {
         };
     }, []);
 
+    // Fonction pour regrouper les images en fonction de la clé de groupe
     const groupBy = (images, keyFunc) => images.reduce((acc, image) => {
         const key = keyFunc(image);
         if (!acc[key]) acc[key] = [];
@@ -142,25 +152,31 @@ const ImageDisplayAndUploader = () => {
         return acc;
     }, {});
 
+
+    // Fonction pour obtenir la clé de groupe en fonction de l'ordre de tri sélectionné
     const getGroupKey = img => sortOrder === 'skyObject' ? (img.skyObject || "Non défini") : new Date(img.date).toLocaleDateString();
 
 
+    // Composant de la modal d'image avec détails
     const ImageModal = ({ isOpen, image, onClose }) => {
         const [showDetails, setShowDetails] = useState(false);
         const [isEditing, setIsEditing] = useState(false);
         const [editedImage, setEditedImage] = useState({ ...image });
 
+
+        // Fonction pour gérer les modifications d'image
         const handleChange = (field, value) => {
             setEditedImage(prev => ({ ...prev, [field]: value }));
         };
 
+        // Fonction pour enregistrer les modifications dans la base de données
         const saveChanges = () => {
             // Envoyez l'événement IPC pour mettre à jour la base de données avec editedImage
             electron.ipcRenderer.send('update-image-info', editedImage);
             setIsEditing(false);
         };
 
-
+        // Rendu de la modal d'image avec détails
         return (
             <CSSTransition in={isOpen} timeout={300} classNames="modal" unmountOnExit onExited={onClose}>
                 <div className="image-modal">
@@ -176,14 +192,14 @@ const ImageDisplayAndUploader = () => {
                         {showDetails && (
                             <div className="details-section">
 
-                            
+
                                 <h1>Info</h1>
                                 <h3>Titre</h3>
                                 <p>{image.name}</p>
 
                                 <h4>Informations d’observation</h4>
 
-                     
+
                                 <label>Objet : </label>
                                 {isEditing ? (
                                     <input value={editedImage.skyObject} onChange={e => handleChange('skyObject', e.target.value)} />
@@ -191,11 +207,8 @@ const ImageDisplayAndUploader = () => {
                                     <p>{image.skyObject}</p>
                                 )}
                                 {!isEditing && <button onClick={() => setIsEditing(true)}>Modifier</button>}
-                       
+
                                 {isEditing && <button onClick={saveChanges}>Sauvegarder</button>}
-                               
-
-
 
                                 <p>Type : {image.objectType}</p>
                                 <p>Constellation : {image.constellation}</p>
@@ -222,37 +235,7 @@ const ImageDisplayAndUploader = () => {
     };
 
 
-
-
-
-
-    const SkyObjectModal = ({ isOpen, onClose }) => {
-        const [selectedSkyObject, setSelectedSkyObject] = useState("");
-
-        const handleConfirm = () => {
-            if (uploadingImage && selectedSkyObject) {
-                setUploadingImage(prev => ({ ...prev, skyObject: selectedSkyObject }));
-                window.electron.ipcRenderer.send("update-skyObject", { imageId: uploadingImage.id, skyObject: selectedSkyObject });
-                onClose();
-            }
-        };
-
-        return (
-            <CSSTransition in={isOpen} timeout={300} classNames="modal" unmountOnExit onExited={onClose}>
-                <div>
-                    <h2>Associer à un objet céleste</h2>
-                    <select value={selectedSkyObject} onChange={e => setSelectedSkyObject(e.target.value)}>
-                        <option value="">--Choisissez un objet céleste--</option>
-                        <option value="Star">Star</option>
-                        <option value="Planet">Planet</option>
-                    </select>
-                    <button onClick={handleConfirm}>Confirmer</button>
-                    <button onClick={onClose}>Annuler</button>
-                </div>
-            </CSSTransition>
-        );
-    };
-
+    // Fonction pour basculer la sélection d'une image
     const toggleImageCheck = (imageId) => {
         setCheckedImages(prevChecked => {
             if (prevChecked.includes(imageId)) {
@@ -264,7 +247,7 @@ const ImageDisplayAndUploader = () => {
     };
 
 
-
+    // Rendu du composant ImageDisplayAndUploader
     return (
         <div style={{ width: '100%' }} >
             <div >
@@ -277,7 +260,7 @@ const ImageDisplayAndUploader = () => {
                 />
             </div>
 
-
+            {/* Affichage des images */}
             {checkedImages.length > 0 && (
                 <div className="action-bar">
 
@@ -295,10 +278,10 @@ const ImageDisplayAndUploader = () => {
 
 
 
+            {/* Conteneur pour les images */}
 
             <div className="container" onDrop={onDrop} onDragOver={e => e.preventDefault()} onDragStart={preventDrag}>
-
-
+                {/* ... (options de tri, filtres, etc.) */}
 
 
                 <div style={{ display: 'flex', gap: '8px' }} >
@@ -310,39 +293,46 @@ const ImageDisplayAndUploader = () => {
                             <option value="date-asc">Plus ancienne</option>
                         </select>
                     </label>
+
+                    { /*
+
+                        <label>
+                            <select value={objectSort} onChange={e => setObjectSort(e.target.value)}>
+                                <option value="all">Tous les objets</option>
+                                <option value="Planet">Planète</option>
+                                <option value="Star">Étoile</option>
+                            </select>
+                        </label> */
+                    }
+
+
                     <label>
-
-                        <select value={objectSort} onChange={e => setObjectSort(e.target.value)}>
-                            <option value="all">Tous les objets</option>
-                            <option value="Planet">Planète</option>
-                            <option value="Star">Étoile</option>
-                        </select>
-                    </label>
-                    <label>
-
-                        <select value={objectSort} onChange={e => setObjectSort(e.target.value)}>
-
+                        <select value={TypeSort} onChange={e => setTypeSort(e.target.value)}>
                             <option value="all">Tous types de photos</option>
-                            <option value="Planet">Rendu</option>
-                            <option value="Star">Brut</option>
-                            <option value="Star">Dark</option>
-                            <option value="Star">Flat</option>
-                            <option value="Star">Offset</option>
+                            <option value="Render">Rendu</option>
+                            <option value="Brut">Brut</option>
+                            <option value="Dark">Dark</option>
+                            <option value="Flat">Flat</option>
+                            <option value="Offset">Offset</option>
                         </select>
                     </label>
                 </div>
 
 
-
+                {/* Modale pour afficher les détails de l'image */}
                 <ImageModal isOpen={isModalOpen} image={selectedImage} onClose={handleImageActions.close} />
 
 
+                {/* Modale pour importer de nouvelles images */}
+                <ImportModal isOpen={ImportModalOpen} onClose={() => setImportModalOpen(false)} />
 
 
-                <SkyObjectModal isOpen={skyObjectModalOpen} onClose={() => setSkyObjectModalOpen(false)} />
+                {/* Affichage des images triées et groupées */}
                 {Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key} style={{ marginBottom: '20px' }}>
-                        <p style={{ fontSize: '14px', marginTop: '40px' }}>{key}</p>
+
+                        <h2 style={{ marginTop: '40px' }}>{key}</h2>
+
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'left' }}>
                             {imgs.map(image => (
                                 <div key={image.id} className="image-container" style={{ position: 'relative' }}>
@@ -358,11 +348,8 @@ const ImageDisplayAndUploader = () => {
                                     <label
                                         htmlFor={`checkbox-${image.id}`}
                                         className="custom-checkbox"></label>
-
                                 </div>
                             ))}
-
-
                         </div>
                     </div>
                 ))}

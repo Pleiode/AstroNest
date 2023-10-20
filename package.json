@@ -31,7 +31,7 @@
     "sqlite3": "^5.1.6",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.22.9",
