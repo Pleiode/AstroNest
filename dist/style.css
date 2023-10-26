@@ -3,9 +3,9 @@
 
 
 :root {
-    --bg-color: #1E1E1E;
+    --bg-color: #191919;
     --color-nav: #262626;
-    --white: #d3d3d3;
+    --white: #e6e6e6;
     --grey10: #939393;
     --grey10: #454545;
     --grey20: #484848;
@@ -23,11 +23,20 @@ body {
 
 p {
     color: var(--white);
+    margin-block: 8px;
+    font-size: 14px;
+}
+
+h1 {
+    font-size: 24px;
+    font-weight: 500;
+
 }
 
 h2 {
     font-size: 18px;
     font-weight: 400;
+
 }
 
 .navbar {
@@ -45,11 +54,11 @@ header {
     padding-inline: 16px;
     -webkit-app-region: drag;
     background-color: var(--color-nav);
+    align-items: center;
 }
 
 
-
-button.secondary {
+button {
     -webkit-app-region: no-drag;
     display: flex;
     padding: 4px 14px;
@@ -59,18 +68,38 @@ button.secondary {
     cursor: pointer;
     font-weight: 400;
     transition: 0.2s;
-    color: var(--white);
     border-radius: 6px;
+    font-size: 14px;
+    height: 34px;
+    color: var(--white);
+}
+
+
+button.primary {
+    border: 1px solid #5250E1;
+    background: #403DE3;
+}
+
+button.secondary {
     border: 1px solid #484848;
     background: #363636;
 }
 
-button.secondary:hover {
+button.tertiaire {
+    background-color: unset;
+    padding: 0;
+    border: unset;
+}
+
+
+
+
+button:hover {
     transition: 0.2s;
     filter: brightness(1.2);
 }
 
-button.secondary:active {
+button:active {
     transition: 0.2s;
     filter: brightness(1.4);
 }
@@ -92,10 +121,12 @@ select {
     background: #363636;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='24' viewBox='0 0 24 24' fill='none' stroke='%23F0F0F0' stroke-width='1' stroke-linecap='round' stroke-linejoin='round' class='feather feather-chevron-down'><polyline points='6 9 12 15 18 9'></polyline></svg>");
     background-repeat: no-repeat;
-    background-position-x: 95%;
+    background-position-x: 98%;
     background-position-y: 4px;
     padding-right: 2rem;
     outline: none;
+    font-size: 14px;
+    cursor: pointer;
 }
 
 select:hover {
@@ -109,6 +140,19 @@ select:active {
 }
 
 
+
+input {
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #434343;
+    background: var(--greyborder);
+    padding: 8px 4px;
+    font-family: 'Roboto';
+    font-weight: 400;
+    padding-left: 10px;
+    color: var(--white);
+    box-sizing: border-box;
+}
 
 
 
@@ -154,6 +198,7 @@ select:active {
 
 .search-input:focus:hover {
     filter: brightness(1.2);
+    cursor: text;
 }
 
 
@@ -315,11 +360,11 @@ ul {
 
 .close-button {
     position: absolute;
-    top: 10px;
+    top: 30px;
     left: 10px;
     background-color: transparent;
     /* noir semi-transparent */
-    color: #fff;
+    color: var(--white);
     /* texte blanc */
     border: none;
     border-radius: 5px;
@@ -339,8 +384,7 @@ ul {
 .close-button:hover {
     transition: 0.2s;
     position: absolute;
-    top: 10px;
-    left: 10px;
+
     background-color: rgba(255, 255, 255, 0.087);
     /* noir semi-transparent */
     border-radius: 30px;
@@ -385,6 +429,7 @@ body,
 .details-section {
     padding: 20px;
     /* Ajustez cette valeur selon vos besoins */
+    background-color: var(--color-nav);
 }
 
 
@@ -397,14 +442,14 @@ body,
 .image-modal .details-section {
 
     transition: flex 0.3s ease;
-    background-color: white;
+
     box-sizing: border-box;
 }
 
 .image-modal .image-section {
     flex: 1;
     /* Prend toute la largeur disponible par défaut */
-    background-color: black;
+
 }
 
 .image-modal .image-section.shrink {
@@ -486,4 +531,102 @@ body,
 
 #maximize-btn {
     background-color: #27c93f;
+}
+
+.overlay {
+    position: fixed;
+    /* Positionnement fixe par rapport à la fenêtre */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Fond noir avec 70% d'opacité */
+    z-index: 1;
+    /* Assurez-vous qu'il s'affiche en dessous de votre modale */
+}
+
+.modal-import {
+    overflow: auto;
+    -webkit-app-region: no-drag;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: fixed;
+    /* Utilisez 'fixed' pour positionner par rapport à la fenêtre et non à l'élément parent */
+    top: 50%;
+    /* Place la partie supérieure de la modale au milieu verticalement */
+    left: 50%;
+    /* Place le côté gauche de la modale au milieu horizontalement */
+    transform: translate(-50%, -50%);
+    /* Déplace la modale de 50% de sa largeur vers la gauche et de 50% de sa hauteur vers le haut pour la centrer parfaitement */
+    z-index: 1000;
+    /* Assurez-vous qu'il est au-dessus d'autres éléments de la page */
+    background-color: var(--color-nav);
+    padding: 24px;
+    box-shadow: 0px 6px 18px 0px rgba(0, 0, 18, 0.32);
+    border-radius: 8px;
+    border: 1px var(--greyborder) solid;
+    min-width: 40%;
+}
+
+
+
+.tag {
+    gap: 10px;
+    display: inline-flex;
+    padding: 4px 8px;
+    background-color: #E3E3FD;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-size: 14px;
+    color: #000091;
+    font-weight: 500;
+    text-transform: uppercase;
+    box-sizing: border-box;
+    width: fit-content;
+    align-items: center;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.tag:hover {
+    filter: brightness(1.2);
+    transition: 0.2s;
+}
+
+
+.suggestions {
+    background: var(--greyborder);
+    box-shadow: 0px 2px 6px 0px rgba(0, 0, 18, 0.32);
+    padding: 14px 12px;
+    border-radius: 3px;
+    overflow: auto;
+    max-height: 6em;
+    position: absolute;
+    width: 70%;
+}
+
+.bar-btn-import {
+    display: flex;
+    gap: 8px;
+    justify-content: right;
+    margin-top: 2em;
+    width: 100%;
+    background: var(--color-nav);
+
+}
+
+
+.info {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.info p {
+    color: #88B2FF;
 }

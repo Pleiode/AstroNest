@@ -1,6 +1,10 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
-const { remote } = require('electron');
+
+
 const electron = require('electron');
+const { app, BrowserWindow, ipcMain, remote } = electron;
+
+
+
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
@@ -17,11 +21,22 @@ console.log("Database path:", dbPath);
 let win;
 let db;
 
+
+if (process.env.NODE_ENV === 'production') {
+    if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === 'object') {
+        for (let [key, value] of Object.entries(window.__REACT_DEVTOOLS_GLOBAL_HOOK__)) {
+            window.__REACT_DEVTOOLS_GLOBAL_HOOK__[key] = typeof value === 'function' ? () => { } : null;
+        }
+    }
+}
+
+
+
 function createWindow() {
     // Crée une nouvelle fenêtre du navigateur Electron
     win = new BrowserWindow({
         width: 1100,
-        height: 750,
+        height: 800,
         minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
         titleBarStyle: 'hidden',
@@ -62,14 +77,20 @@ function createWindow() {
         }
     });
 
-    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
-    ipcMain.on("image-uploaded", (event, imagePath) => {
-        // Obtient le nom de fichier de l'image et l'extension du fichier
-        const imageName = path.basename(imagePath);
-        const fileExtension = path.extname(imagePath).toLowerCase();
 
-        // Initialise la date de la prise de vue à la date actuelle
+    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
+    ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
+        // Destructuration de l'objet pour extraire les propriétés nécessaires
+        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation } = currentUploadingImage;
+
+        // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
+        const skyObjectString = skyObject.join(', ');
+        const constellationsString = constellation.join(', ');
+
+
+
         let shotDate = new Date().toISOString();
+        const fileExtension = path.extname(imagePath).toLowerCase();
 
         // Si l'extension du fichier est .jpeg ou .jpg, tente de lire les métadonnées EXIF
         if (fileExtension === '.jpeg' || fileExtension === '.jpg') {
@@ -108,16 +129,22 @@ function createWindow() {
             }
         }
 
+
         // Insère les données de l'image dans la base de données
-        db.run(`INSERT INTO images(name, path, date) VALUES(?, ?, ?)`, [imageName, imagePath, shotDate], function (err) {
+        // NOTE: Ajout de 'photoType' à l'instruction d'insertion
+        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation) VALUES(?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellationsString], function (err) {
             if (err) {
                 return console.log(err.message);
             }
             console.log(`A row has been inserted with rowid ${this.lastID}`);
-            // Envoie un événement "image-added" avec l'ID de la dernière image ajoutée
             event.reply("image-added", this.lastID);
         });
     });
+
+
+
+
+
 
     // Gestionnaire d'événements pour l'événement "get-images" envoyé depuis le processus de rendu
     ipcMain.on("get-images", (event) => {
@@ -148,8 +175,6 @@ function createWindow() {
 // Écoute l'événement "ready" de l'application et crée la fenêtre lorsqu'elle est prête
 app.whenReady().then(createWindow);
 
-// Définit le nom de l'application
-app.setName('Eidos');
 
 // Fonction pour créer la base de données s'il n'existe pas
 function createDatabase() {
@@ -204,6 +229,7 @@ ipcMain.on("update-Type", (event, { imageId, photoType }) => {
     });
 });
 
+
 // Gestionnaire d'événements pour l'événement "update-image-info" envoyé depuis le processus de rendu
 ipcMain.on("update-image-info", (event, updatedImage) => {
     // Extrait l'ID et les champs mis à jour de l'objet d'image
@@ -226,4 +252,16 @@ ipcMain.on("update-image-info", (event, updatedImage) => {
     });
 });
 
+// ... Vos autres imports et initialisations ...
 
+// Ajoutez une nouvelle écoute pour l'événement "get-skyobjects"
+ipcMain.on('get-skyobjects', (event) => {
+    db.all('SELECT skyObject FROM images', [], (err, rows) => {
+        if (err) {
+            console.error(err.message);
+            event.reply('get-skyobjects-reply', []);
+        } else {
+            event.reply('get-skyobjects-reply', rows);
+        }
+    });
+});

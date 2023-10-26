@@ -1,14 +1,13 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { CSSTransition } from 'react-transition-group';
 import Header from './Header';
-import ImportModal from "./ImportModal";
 import { ArrowLeft, X, Info } from 'react-feather';
 
 
 const ImageDisplayAndUploader = () => {
     // State pour gérer les images, l'état de la modal d'importation, l'état de la modal d'image, l'image sélectionnée, etc.
+
     const [images, setImages] = useState([]);
-    const [ImportModalOpen, setImportModalOpen] = useState(false);
     const [isModalOpen, setModalOpen] = useState(false);
     const [selectedImage, setSelectedImage] = useState({});
     const [uploadingImage, setUploadingImage] = useState({});
@@ -25,28 +24,7 @@ const ImageDisplayAndUploader = () => {
     }, [objectSort]);
 
 
-    // Fonction pour gérer l'envoi des fichiers d'image à l'IPCRenderer
-    const handleImageUpload = useCallback((files) => {
-        files.forEach(file => {
-            const imagePath = file.path;
-            const currentUploadingImage = {
-                path: imagePath,
-                name: file.name,
-                date: new Date()
-            };
-
-            setUploadingImage(currentUploadingImage);
-            window.electron.ipcRenderer.send("image-uploaded", imagePath);
-        });
-        setImportModalOpen(true);
-    }, []);
-
-
-    // Fonction pour gérer la sélection de fichiers
-    const handleFileSelected = (e) => {
-        handleImageUpload(Array.from(e.target.files));
-    };
-
+    
     // Fonction pour gérer le glisser-déposer d'images
     const onDrop = (e) => {
         e.preventDefault();
@@ -73,13 +51,18 @@ const ImageDisplayAndUploader = () => {
                 break;
         }
 
+        // Filtrer par le type de photo
+        const typeFiltered = TypeSort === 'all' ? sorted : sorted.filter(img => img.photoType === TypeSort);
+
+
+        // Filtrer par le terme de recherche
         if (searchTerm) {
-            return sorted.filter(img =>
+            return typeFiltered.filter(img =>
                 img.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 (img.skyObject && img.skyObject.toLowerCase().includes(searchTerm.toLowerCase()))
             );
         } else {
-            return objectSort === 'all' ? sorted : sorted.filter(img => img.skyObject === objectSort);
+            return objectSort === 'all' ? typeFiltered : typeFiltered.filter(img => img.skyObject === objectSort);
         }
     };
 
@@ -176,7 +159,7 @@ const ImageDisplayAndUploader = () => {
             setIsEditing(false);
         };
 
-        // Rendu de la modal d'image avec détails
+
         return (
             <CSSTransition in={isOpen} timeout={300} classNames="modal" unmountOnExit onExited={onClose}>
                 <div className="image-modal">
@@ -185,7 +168,7 @@ const ImageDisplayAndUploader = () => {
                             <button className="close-button" onClick={onClose}><ArrowLeft strokeWidth={1.5} ></ArrowLeft></button>
                             {image && <img src={image.path} alt={image.name} className="selected-image" />}
                             <button className="button-close-detail" onClick={() => setShowDetails(!showDetails)}>
-                                {showDetails ? <X strokeWidth={1.5} stroke="black" ></X> : <Info strokeWidth={1.5} ></Info>}
+                                {showDetails ? <X strokeWidth={1.5}  ></X> : <Info strokeWidth={1.5} ></Info>}
                             </button>
                         </div>
 
@@ -234,8 +217,6 @@ const ImageDisplayAndUploader = () => {
         );
     };
 
-
-    // Fonction pour basculer la sélection d'une image
     const toggleImageCheck = (imageId) => {
         setCheckedImages(prevChecked => {
             if (prevChecked.includes(imageId)) {
@@ -247,7 +228,7 @@ const ImageDisplayAndUploader = () => {
     };
 
 
-    // Rendu du composant ImageDisplayAndUploader
+
     return (
         <div style={{ width: '100%' }} >
             <div >
@@ -256,11 +237,11 @@ const ImageDisplayAndUploader = () => {
                 <Header
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
-                    onImportClick={handleFileSelected}
+
                 />
             </div>
 
-            {/* Affichage des images */}
+
             {checkedImages.length > 0 && (
                 <div className="action-bar">
 
@@ -278,11 +259,8 @@ const ImageDisplayAndUploader = () => {
 
 
 
-            {/* Conteneur pour les images */}
 
             <div className="container" onDrop={onDrop} onDragOver={e => e.preventDefault()} onDragStart={preventDrag}>
-                {/* ... (options de tri, filtres, etc.) */}
-
 
                 <div style={{ display: 'flex', gap: '8px' }} >
                     <label>
@@ -319,15 +297,12 @@ const ImageDisplayAndUploader = () => {
                 </div>
 
 
-                {/* Modale pour afficher les détails de l'image */}
+
                 <ImageModal isOpen={isModalOpen} image={selectedImage} onClose={handleImageActions.close} />
 
 
-                {/* Modale pour importer de nouvelles images */}
-                <ImportModal isOpen={ImportModalOpen} onClose={() => setImportModalOpen(false)} />
 
 
-                {/* Affichage des images triées et groupées */}
                 {Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key} style={{ marginBottom: '20px' }}>
 
