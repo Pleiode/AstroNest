@@ -36,7 +36,8 @@ module.exports = {
             "https": require.resolve("https-browserify"),
             "http": require.resolve("stream-http"),
             "buffer": require.resolve("buffer/"),
-            
+            "fs": false, // Vous pouvez définir "fs" sur false car il n'est pas nécessaire dans le navigateur.
+            "path": require.resolve("path-browserify")
         },
         alias: {
             buffer: 'buffer'

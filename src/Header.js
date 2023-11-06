@@ -15,14 +15,45 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
     const [ImportModalOpen, setImportModalOpen] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState([]);
+    
+    const [darkFileName, setDarkFileName] = useState('Aucun fichier choisi');
+    const [darkPath, setDarkPath] = useState(''); // État pour stocker le chemin d'accès
+
+    const [brutFileName, setBrutFileName] = useState('Aucun fichier choisi');
+    const [brutPath, setBrutPath] = useState(''); // État pour stocker le chemin d'accès
+
+    const [flatFileName, setFlatFileName] = useState('Aucun fichier choisi');
+    const [flatPath, setFlatPath] = useState(''); // État pour stocker le chemin d'accès
+
+    const [offsetFileName, setOffsetFileName] = useState('Aucun fichier choisi');
+    const [offsetPath, setOffsetPath] = useState(''); // État pour stocker le chemin d'accès
+
+
+
 
     const [inputValue, setInputValue] = useState('');
     const [tags, setTags] = useState([]);
 
-    const [constellationInputValue, setConstellationInputValue] = useState('');
-    const [constellation, setConstellations] = useState([]);
+    const [file, setFile] = useState(null);
 
 
+    // Location input et value
+    const [constellation, setConstellation] = useState("");
+
+    // Location input et value
+    const [location, setLocation] = useState("");
+
+    // Instrument input et value
+    const [opticalTube, setOpticalTube] = useState("");
+
+    // Mount input et value
+    const [mount, setMount] = useState("");
+
+    // Caméra input et value
+    const [camera, setCamera] = useState("");
+
+    // Object Type Doropdown
+    const [objectType, setObjectType] = useState("Stars"); // Initialisation avec une valeur par défaut
 
     // stoicker les skyObjects
     const [skyObjects, setSkyObjects] = useState([]);
@@ -56,8 +87,6 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                     });
                 }
             }
-
-
         };
 
 
@@ -106,7 +135,14 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                 date: new Date(),
                 photoType: selectedType, // Utilisation de selectedType directement ici
                 skyObject: tags.filter(tag => !tag.includes(',')),
-                constellation: constellation
+                constellation: constellation,
+                location: location,
+                opticalTube: opticalTube,
+                mount, mount,
+                camera: camera,
+                objectType: objectType,
+                darkPath: darkPath,
+                brutPath: brutPath,
             };
 
             setUploadingImage(currentUploadingImage);
@@ -117,12 +153,14 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
         setImportModalOpen(false); // Fermer la modale d'importation
         window.electron.ipcRenderer.send('get-skyobjects');  // Demander les skyObjects mis à jour
 
-    }, [selectedFiles, selectedType, tags, constellation]);
+        setLocation(""); // Réinitialiser la valeur de location
+        setConstellation(""); // Réinitialiser la valeur de constellation
+        setOpticalTube(""); // Réinitialiser la valeur de opticalTube
+        setMount("");
+        setCamera("");
+        setDarkPath("");
 
-
-    const handleConfirm = () => {
-        handleImageUpload(); // Appeler simplement handleImageUpload 
-    };
+    }, [selectedFiles, selectedType, tags, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath]);
 
 
 
@@ -141,10 +179,10 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
 
     // Fonction pour gérer la sélection de fichiers
     const handleFileSelected = (e) => {
-        setSelectedFiles(Array.from(e.target.files)); // Stocker les fichiers sélectionnés
-        setImportModalOpen(true); // Afficher la modale de confirmation
+        const files = Array.from(e.target.files); // Stocker les fichiers sélectionnés
+        setSelectedFiles(files); // Mettre à jour l'état avec les fichiers sélectionnés
+        handleImageUpload(files); // Gérer directement les fichiers sans ouvrir la modale
     };
-
 
     const handleAddTag = (e) => {
         // Si c'est un événement de touche, et que la touche n'est ni 'Enter' ni ',', on sort de la fonction
@@ -155,7 +193,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
             e.preventDefault(); // Empêcher la virgule d'être ajoutée à l'input
         }
 
-        const newTag = e.target.value.trim();
+        const newTag = e.target.value.trim().toLowerCase();;
         if (newTag && !tags.includes(newTag)) {
             setTags(prevTags => [...prevTags, newTag]);
             setInputValue('');
@@ -167,19 +205,27 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
     };
 
 
-
-
-    const handleAddConstellation = (e) => {
-        if (e.key && e.key !== 'Enter') return;
-
-        const newConstellation = e.target.value.trim().toUpperCase();
-        if (newConstellation && !constellation.includes(newConstellation)) {
-            setConstellations(prevConstellations => [...prevConstellations, newConstellation]);
-            setConstellationInputValue('');
+    const handleDarkFileChange = (e) => {
+        const selectedFile = e.target.files[0]; // récupérer le fichier sélectionné
+        if (selectedFile) {
+            setFile(selectedFile);
+            setDarkPath(e.target.value); // stocker le chemin d'accès du fichier
+            setDarkFileName(selectedFile.name); // mettre à jour le nom du fichier "dark"
+        } else {
+            setDarkFileName('Aucun fichier choisi');
         }
-    }
+    };
 
-
+    const handleBrutFileChange = (e) => {
+        const selectedFile = e.target.files[0]; // récupérer le fichier sélectionné
+        if (selectedFile) {
+            setFile(selectedFile);
+            setBrutPath(e.target.value); // stocker le chemin d'accès du fichier
+            setBrutFileName(selectedFile.name); // mettre à jour le nom du fichier "dark"
+        } else {
+            setBrutFileName('Aucun fichier choisi');
+        }
+    };
 
 
     // Rendu du composant
@@ -189,7 +235,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
             <input
                 type="text"
                 className="search-input"
-                placeholder="Rechercher par titre, objet"
+                placeholder="Rechercher par objet, titre, lieu..."
                 value={searchTerm} // La valeur du champ est contrôlée par le prop 'searchTerm'
                 onChange={e => onSearchChange(e.target.value)} // Quand la valeur change, la fonction 'onSearchChange' est appelée avec la nouvelle valeur
             />
@@ -202,13 +248,12 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
             {/*// Champ input caché pour le chargement des fichiers */}
             <input
                 ref={fileInputRef} // Référence pour accéder à cet élément
-                type="file"
-                accept="image/*" // Accepte uniquement les images
+                type="file" 
+                accept="image/png, image/jpeg, image/raw, image/tiff" 
                 style={{ display: 'none' }} // Caché à l'utilisateur
                 onChange={handleFileSelected} // Quand un fichier est sélectionné, 'onImportClick' est appelé
                 multiple // Permet la sélection de plusieurs fichiers en même temps
             />
-
 
 
             {ImportModalOpen && (
@@ -217,20 +262,14 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                     <div className="modal-import"  >
                         <h1>Importation de {selectedFiles.length} photo(s)</h1>
 
-                        <div style={{ maxHeight: '30vh', overflow: 'auto', backgroundColor: 'var(--bg-color)', padding: '1em', borderRadius: '6px', minHeight: '6em', display:'flex', justifyContent:'center' }}>
+                        <div style={{ maxHeight: '30vh', overflow: 'auto', backgroundColor: '#000000', padding: '1em', borderRadius: '6px', minHeight: '6em', display: 'flex', justifyContent: 'center' }}>
                             {selectedFiles.map(file => (
                                 <ImageThumbnail key={file.name} file={file} />
                             ))}
                         </div>
 
-
-
                         <div style={{ display: 'flex', gap: '40px' }} >
-
-
                             <div style={{ display: 'flex', gap: '16px', flexDirection: 'column', width: '100%' }}  >
-
-
 
                                 {tags && tags.length > 0 && (
                                     <div>
@@ -245,19 +284,30 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                                 )}
 
 
+                                <h2>Informations d’observation</h2>
 
                                 <div style={{ display: 'flex', gap: '16px' }} >
 
-
                                     <div style={{ width: '100%' }} >
                                         <p>Sélectionnez type d’objet</p>
-                                        <select style={{ width: '100%' }} onChange={e => setSelectedType(e.target.value)}>
-                                            <option disabled='true' value="">Type dd'objet</option>
-                                            <option value="Render">Planéte</option>
-                                            <option value="Brut">Amas</option>
-                                            <option value="Dark">Nébuleuse</option>
+                                        <select style={{ width: '100%' }} onChange={e => setObjectType(e.target.value)}>
+                                            <option disabled='true' value="">Type d'objet</option>
+                                            <option value="Stars">Stars</option>
+                                            <option value="Planets">Planets</option>
+                                            <option value="Moons">Moons</option>
+                                            <option value="Asteroids">Asteroids</option>
+                                            <option value="Comets">Comets</option>
+                                            <option value="Dwarf Planets">Dwarf Planets</option>
+                                            <option value="Galaxies">Galaxies</option>
+                                            <option value="Nebulae">Nebulae</option>
+                                            <option value="White Dwarfs">White Dwarfs</option>
+                                            <option value="Neutron Stars">Neutron Stars</option>
+                                            <option value="Pulsars">Pulsars</option>
+                                            <option value="Quasars">Quasars</option>
+                                            <option value="Brown Dwarfs">Brown Dwarfs</option>
+                                            <option value="Exoplanets">Exoplanets</option>
+                                            <option value="Globular Clusters">Globular Clusters</option>
                                         </select>
-
                                     </div>
 
 
@@ -271,11 +321,10 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                                                     style={{ width: '100%' }}
                                                     value={inputValue}
                                                     onChange={e => {
-                                                        const value = e.target.value.toUpperCase();
+                                                        const value = e.target.value;
                                                         setInputValue(value);
                                                     }}
                                                     onKeyDown={handleAddTag}
-                                                    className="uppercase"
                                                     placeholder="Saturne, M17, Lune..."
                                                 />
 
@@ -326,74 +375,85 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
 
 
                                 <div>
-
                                     <p>Constellation</p>
                                     <input
+                                        type="text"
                                         style={{ width: '100%' }}
-                                        value={constellationInputValue}    
-                                        onChange={e => setConstellationInputValue(e.target.value.toUpperCase())}
-                                        onKeyDown={handleAddConstellation}
-                                        placeholder="Orion, Ursa Major..."
+                                        value={constellation}
+                                        onChange={e => setConstellation(e.target.value)}
+                                        placeholder=""
                                     />
+
                                 </div>
 
 
                                 <div>
-
                                     <p>Lieu d'observation</p>
                                     <input
+                                        type="text"
+                                        value={location}
                                         style={{ width: '100%' }}
-                                        onChange={e => {
-                                            const value = e.target.value.toUpperCase();
-                                            setInputValue(value);
-                                        }}
-
+                                        onChange={e => setLocation(e.target.value)}
+                                        placeholder=""
                                     />
                                 </div>
 
                                 <div style={{ display: 'flex', gap: '16px' }} >
-
                                     <div style={{ width: '100%' }} >
-                                        <p>Instrument</p>
+                                        <p>Tupe optique</p>
                                         <input
+                                            type="text"
+                                            value={opticalTube}
                                             style={{ width: '100%' }}
-                                            onChange={e => {
-                                                const value = e.target.value.toUpperCase();
-                                                setInputValue(value);
-                                            }}
+                                            onChange={e => setOpticalTube(e.target.value)}
+                                            placeholder=""
                                         />
                                     </div>
 
                                     <div style={{ width: '100%' }} >
-                                        <p>Caméra</p>
+                                        <p>Monture</p>
                                         <input
+                                            type="text"
+                                            value={mount}
                                             style={{ width: '100%' }}
-                                            onChange={e => {
-                                                const value = e.target.value.toUpperCase();
-                                                setInputValue(value);
-                                            }}
+                                            onChange={e => setMount(e.target.value)}
+                                            placeholder=""
                                         />
                                     </div>
-
-
                                 </div>
 
-
+                                <div style={{ width: '100%' }} >
+                                    <p>Caméra</p>
+                                    <input
+                                        type="text"
+                                        value={camera}
+                                        style={{ width: '100%' }}
+                                        onChange={e => setCamera(e.target.value)}
+                                        placeholder=""
+                                    />
+                                </div>
 
 
                             </div>
 
-                            <div style={{ width: '100%' }} >
+
+
+
+
+                            <div style={{ display: 'flex', gap: '16px', flexDirection: 'column', width: '100%' }} >
+
+                                <h2>Caractéristiques photo</h2>
 
                                 <div>
-                                    <p>Sélectionnez type de photo</p>
+                                    <p>Sélectionnez type de fichier</p>
                                     <select style={{ width: '100%' }} value={selectedType} onChange={e => setSelectedType(e.target.value)}>
-                                        <option disabled='true' value="">Type de photo</option>
+                                        <option disabled='true' value="">Type de fichier</option>
                                         <option value="Render">Rendu</option>
                                         <option value="Brut">Brut</option>
                                         <option value="Dark">Dark</option>
                                         <option value="Flat">Flat</option>
                                         <option value="Offset">Offset</option>
+                                        <option value="Dessin">Dessin</option>
                                     </select>
                                 </div>
 
@@ -401,131 +461,62 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                                 {selectedType === "Render" && (
                                     <div style={{ display: 'flex', gap: '16px', flexDirection: 'column' }} >
 
-                                        <div className="info" >
-                                            <Info stroke="#88B2FF" strokeWidth={2} width={'16px'} />
-                                            <p>Importez d’abord vos Brut, Dark, Offset et Flat avant de les sélectionner.</p>
-                                        </div>
 
                                         <p style={{ margin: '0' }} >Lier des DOFs à votre rendu</p>
 
                                         <div>
                                             <p>Brut</p>
-                                            <div style={{ display: 'flex', gap: '8px' }} >
-                                                <input
-                                                    style={{ width: '100%' }}
-                                                    value={inputValue}
-                                                    onChange={e => {
-                                                        const value = e.target.value.toUpperCase();
-                                                        setInputValue(value);
-                                                    }}
-                                                    onKeyDown={handleAddTag}
-                                                    className="uppercase"
-
-                                                />
-
-                                                {/* Ajout du bouton "Valider" */}
-                                                <button className="secondary"
-                                                    onClick={() => {
-                                                        if (inputValue.trim()) {
-                                                            handleAddTag({ key: 'Enter', target: { value: inputValue } });
-                                                        }
-                                                    }}
-                                                >
-                                                    Sélectionner
-                                                </button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div className="file-upload-container">
+                                                    <span className="file-name">{brutFileName}</span>
+                                                    <label className="file-upload-btn">
+                                                        Sélectionner...
+                                                        <input
+                                                            className="upload"
+                                                            type="file"
+                                                            onChange={handleBrutFileChange}
+                                                            style={{ display: 'none' }}  // Cache le véritable input
+                                                            
+                                                        />
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
 
 
                                         <div>
                                             <p>Dark</p>
-                                            <div style={{ display: 'flex', gap: '8px' }} >
-                                                <input
-                                                    style={{ width: '100%' }}
-                                                    value={inputValue}
-                                                    onChange={e => {
-                                                        const value = e.target.value.toUpperCase();
-                                                        setInputValue(value);
-                                                    }}
-                                                    onKeyDown={handleAddTag}
-                                                    className="uppercase"
-
-                                                />
-
-                                                {/* Ajout du bouton "Valider" */}
-                                                <button className="secondary"
-                                                    onClick={() => {
-                                                        if (inputValue.trim()) {
-                                                            handleAddTag({ key: 'Enter', target: { value: inputValue } });
-                                                        }
-                                                    }}
-                                                >
-                                                    Sélectionner
-                                                </button>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <div className="file-upload-container">
+                                                    <span className="file-name">{darkFileName}</span>
+                                                    <label className="file-upload-btn">
+                                                        Sélectionner...
+                                                        <input
+                                                            className="upload"
+                                                            type="file"
+                                                            onChange={handleDarkFileChange}
+                                                            style={{ display: 'none' }}  // Cache le véritable input
+                                                        />
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
+
 
 
                                         <div>
                                             <p>Offset</p>
                                             <div style={{ display: 'flex', gap: '8px' }} >
-                                                <input
-                                                    style={{ width: '100%' }}
-                                                    value={inputValue}
-                                                    onChange={e => {
-                                                        const value = e.target.value.toUpperCase();
-                                                        setInputValue(value);
-                                                    }}
-                                                    onKeyDown={handleAddTag}
-                                                    className="uppercase"
 
-                                                />
-
-                                                {/* Ajout du bouton "Valider" */}
-                                                <button className="secondary"
-                                                    onClick={() => {
-                                                        if (inputValue.trim()) {
-                                                            handleAddTag({ key: 'Enter', target: { value: inputValue } });
-                                                        }
-                                                    }}
-                                                >
-                                                    Sélectionner
-                                                </button>
                                             </div>
-
                                         </div>
 
                                         <div>
                                             <p>Flat</p>
                                             <div style={{ display: 'flex', gap: '8px' }} >
-                                                <input
-                                                    style={{ width: '100%' }}
-                                                    value={inputValue}
-                                                    onChange={e => {
-                                                        const value = e.target.value.toUpperCase();
-                                                        setInputValue(value);
-                                                    }}
-                                                    onKeyDown={handleAddTag}
-                                                    className="uppercase"
 
-                                                />
-
-                                                {/* Ajout du bouton "Valider" */}
-                                                <button className="secondary"
-                                                    onClick={() => {
-                                                        if (inputValue.trim()) {
-                                                            handleAddTag({ key: 'Enter', target: { value: inputValue } });
-                                                        }
-                                                    }}
-                                                >
-                                                    Sélectionner
-                                                </button>
                                             </div>
-
                                         </div>
-
-
-
                                     </div>
                                 )}
                             </div>
@@ -539,7 +530,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
 
                         <div className="bar-btn-import" >
                             <button className="secondary" onClick={() => { handleClose(); }}>Annuler</button>
-                            <button className="primary" onClick={() => { handleConfirm(); handleClose(); }}>Confirmer Importation</button>
+                            <button className="primary" onClick={() => { handleImageUpload(); handleClose(); }}>Confirmer Importation</button>
                         </div>
                     </div>
                 </>

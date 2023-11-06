@@ -5,15 +5,20 @@
 :root {
     --bg-color: #191919;
     --color-nav: #262626;
-    --white: #e6e6e6;
+    --white: #cfcfcf;
     --grey10: #939393;
     --grey10: #454545;
     --grey20: #484848;
     --greyborder: #363636;
-    --blue10: #A6C6FF;
+    --blue10: #7a78db;
     --blue20: #1D2437;
 }
 
+.focus {
+background-color: #1f1f2d;
+    border-block: #7a78db solid 0.5px;
+}
+ 
 body {
     margin: 0;
     background-color: var(--bg-color);
@@ -34,16 +39,30 @@ h1 {
 }
 
 h2 {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 400;
-
+    margin-block: 8px;
 }
+
+
+h4 {
+    font-size: 14px;
+    font-weight: 400;
+    margin-block-start: 20px;
+    margin-block-end: 8px;
+    color: var(--white);
+}
+
 
 .navbar {
     border-right: 1px solid var(--greyborder);
     background-color: var(--color-nav);
     height: 100vh;
     -webkit-app-region: drag;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    box-sizing: border-box;
 }
 
 header {
@@ -55,6 +74,8 @@ header {
     -webkit-app-region: drag;
     background-color: var(--color-nav);
     align-items: center;
+    height: 40px;
+
 }
 
 
@@ -104,6 +125,27 @@ button:active {
     filter: brightness(1.4);
 }
 
+.btn-export {
+    width: 100%;
+    border-radius: 0;
+    background-color: unset;
+    color: var(--white);
+    border: unset;
+    border-top: 1px solid #363636;
+    padding-block: 22px;
+    background-color: var(--color-nav);
+    justify-content: center;
+}
+
+.btn-export:hover {
+    filter: brightness(1.2);
+}
+
+.btn-export:active {
+    filter: brightness(1.4);
+}
+
+
 
 select {
     -webkit-appearance: none;
@@ -142,6 +184,7 @@ select:active {
 
 
 input {
+    width: 100%;
     font-size: 14px;
     border-radius: 6px;
     border: 1px solid #434343;
@@ -152,6 +195,22 @@ input {
     padding-left: 10px;
     color: var(--white);
     box-sizing: border-box;
+    transition: 0.2s;
+
+}
+
+input:hover {
+    outline: none;
+    filter: brightness(1.2);
+    transition: 0.2s;
+}
+
+input:focus {
+    outline: none;
+    filter: brightness(1.2);
+    transition: 0.2s;
+    border: #7a78db solid 1px;
+
 }
 
 
@@ -188,7 +247,7 @@ input {
     transition: 0.2s;
     box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.10);
     background-size: 0px;
-    padding-left: 24px;
+    padding-left: 12px;
     filter: brightness(1.2);
 }
 
@@ -204,7 +263,7 @@ input {
 
 .container {
     background-color: var(--bg-color);
-    height: 87vh;
+    height: 78vh;
     overflow: auto;
     padding: 18px;
 }
@@ -327,6 +386,17 @@ ul {
     /* Affiche la coche bleue lorsque la checkbox est cochée */
 }
 
+.image-container.grid {
+    /* Styles existants pour la vue grille */
+}
+
+.image-container.list {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    /* ... autres styles pour la vue liste ... */
+}
+
 
 .image-checkbox:checked+.custom-checkbox,
 .image-container:hover .custom-checkbox {
@@ -355,6 +425,19 @@ ul {
     max-height: 100%;
     width: auto;
     height: auto;
+    transform-origin: center center;
+    z-index: 0;
+
+}
+
+.selected-image:active {
+    cursor: grabbing;
+    /* Utilisez la couleur de bordure de votre choix */
+}
+
+.focus-image {
+    border: var(--blue10) 1px solid;
+    border-radius: 3px;
 }
 
 
@@ -430,7 +513,45 @@ body,
     padding: 20px;
     /* Ajustez cette valeur selon vos besoins */
     background-color: var(--color-nav);
+    z-index: 1;
+    right: 0;
+    border-left: 1px solid var(--greyborder);
+
+    display: flex;
+    flex-direction: column;
+
+    box-sizing: border-box;
+    overflow: auto;
+    height: calc(100vh - 65px);
+    width: 40%;
+
 }
+
+
+.details-section div p {
+    text-align: right;
+    white-space: nowrap;
+    width: 30%;
+    font-size: 12px;
+    color: #939393;
+}
+
+.input-details {
+    width: 70%;
+    height: 28px;
+    font-size: 12px;
+    margin: 4px;
+}
+
+select.input-details {
+    width: 70%;
+    height: 28px;
+    font-size: 12px;
+    padding-block: 0;
+    padding-right: 0;
+}
+
+
 
 
 .image-modal .modal-content {
@@ -479,6 +600,9 @@ body,
     margin: auto;
     /* centre l'image horizontalement et verticalement */
 }
+
+
+
 
 .details-section p {
     word-wrap: break-word;
@@ -565,11 +689,8 @@ body,
     /* Déplace la modale de 50% de sa largeur vers la gauche et de 50% de sa hauteur vers le haut pour la centrer parfaitement */
     z-index: 1000;
     /* Assurez-vous qu'il est au-dessus d'autres éléments de la page */
-    background-color: var(--color-nav);
+    background-color: var(--bg-color);
     padding: 24px;
-    box-shadow: 0px 6px 18px 0px rgba(0, 0, 18, 0.32);
-    border-radius: 8px;
-    border: 1px var(--greyborder) solid;
     min-width: 40%;
 }
 
@@ -616,8 +737,6 @@ body,
     justify-content: right;
     margin-top: 2em;
     width: 100%;
-    background: var(--color-nav);
-
 }
 
 
@@ -629,4 +748,165 @@ body,
 
 .info p {
     color: #88B2FF;
+}
+
+
+
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+
+}
+
+
+table,
+th,
+td {
+    border: 0.5px solid var(--greyborder);
+}
+
+th {
+    background-color: var(--color-nav);
+
+}
+
+table thead tr th {
+    text-transform: uppercase;
+    font-size: 12px;
+    padding-block: 6px;
+}
+
+
+th,
+td {
+    font-weight: 400;
+    padding: 0px 12px;
+    text-align: left;
+    font-size: 14px;
+    color: #a2a2a2;
+    max-width: 100px;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+
+
+
+
+.switch-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-radius: 8px;
+    background-color: #0d0d0d;
+    padding: 5px;
+    gap: 8px;
+    font-size: 14px;
+
+}
+
+.switch-label {
+    color: #a2a2a2;
+    padding: 2px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+}
+
+.switch-label:hover {
+    filter: brightness(1.2);
+}
+
+.switch-label.active:hover {
+    filter: brightness(1);
+}
+
+
+.switch-label.active {
+    background-color: #363636;
+    border: 1px solid #484848;
+    color: var(--white);
+}
+
+input.upload {
+    background-color: unset;
+    padding: 0;
+    border: unset;
+}
+
+.file-name {
+    font-size: 14px;
+}
+
+
+.file-upload-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    flex-direction: row-reverse;
+    gap: 8px;
+}
+
+.file-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-upload-btn {
+    border: 1px solid #484848;
+    background: #363636;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: 'Roboto';
+    cursor: pointer;
+    font-weight: 400;
+    transition: 0.2s;
+    border-radius: 6px;
+    font-size: 14px;
+    height: 34px;
+    align-items: center;
+    display: flex;
+    padding-inline: 14px;
+}
+
+.file-upload-btn:hover {
+    filter: brightness(1.2);
+}
+
+.file-upload-btn:active {
+    filter: brightness(1.4);
+}
+
+.image-container {
+    position: relative;
+}
+
+
+
+
+textarea {
+    border: 1px solid #434343;
+    background: var(--greyborder);
+    color: var(--white);
+    border-radius: 6px;
+    font-family: 'Roboto';
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+
+textarea:focus {
+    outline: none;
+    filter: brightness(1.2);
+    transition: 0.2s;
+    border: #7a78db solid 1px;
 }

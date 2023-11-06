@@ -1,15 +1,13 @@
-
-
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, remote } = electron;
-
-
+const { app, BrowserWindow, ipcMain, remote, dialog } = electron;
 
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
 const { spawn } = require('child_process');
+
+
 
 // Obtient le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
@@ -35,7 +33,7 @@ if (process.env.NODE_ENV === 'production') {
 function createWindow() {
     // Crée une nouvelle fenêtre du navigateur Electron
     win = new BrowserWindow({
-        width: 1100,
+        width: 1200,
         height: 800,
         minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
@@ -79,17 +77,19 @@ function createWindow() {
 
 
     // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
+    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
     ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
         // Destructuration de l'objet pour extraire les propriétés nécessaires
-        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation } = currentUploadingImage;
+        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath } = currentUploadingImage;
 
         // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
         const skyObjectString = skyObject.join(', ');
-        const constellationsString = constellation.join(', ');
 
-
-
+        // Initialisation de la variable shotDate avec la date actuelle
         let shotDate = new Date().toISOString();
+        // Déclaration de l'objet exifData pour stocker les données EXIF
+        let exifData = {};
+
         const fileExtension = path.extname(imagePath).toLowerCase();
 
         // Si l'extension du fichier est .jpeg ou .jpg, tente de lire les métadonnées EXIF
@@ -100,43 +100,34 @@ function createWindow() {
                 const parser = exifParser.create(buffer);
                 const result = parser.parse();
 
-                // Si les métadonnées EXIF contiennent la date de prise de vue (DateTimeOriginal)
-                if (result && result.tags && result.tags.DateTimeOriginal) {
-                    // Si DateTimeOriginal est un nombre (timestamp Unix)
-                    if (typeof result.tags.DateTimeOriginal === "number") {
-                        const exifDate = new Date(result.tags.DateTimeOriginal * 1000); // Convertit le timestamp en millisecondes
-                        if (!isNaN(exifDate.getTime())) {
-                            shotDate = exifDate.toISOString();
-                        } else {
-                            console.error("Date des métadonnées EXIF invalide (après conversion):", result.tags.DateTimeOriginal);
-                        }
-                    }
-                    // Si DateTimeOriginal est sous forme de chaîne (format standard EXIF)
-                    else {
-                        const exifDate = new Date(result.tags.DateTimeOriginal);
-                        if (!isNaN(exifDate.getTime())) {  // Vérification que la date est valide
-                            shotDate = exifDate.toISOString();
-                        } else {
-                            console.error("Date des métadonnées EXIF invalide (format standard):", result.tags.DateTimeOriginal);
-                        }
+                // Traitement des données EXIF et stockage dans l'objet exifData
+                if (result && result.tags) {
+                    // Ici, vous pouvez ajouter les données EXIF que vous voulez enregistrer, par exemple:
+                    exifData.camera = result.tags.Model; // modèle de la caméra
+                    exifData.exposure = result.tags.ExposureTime; // temps d'exposition
+                    exifData.resolution = `${result.tags.ImageWidth}x${result.tags.ImageHeight}`; // résolution de l'image
+
+
+                    // Gestion de la date de prise de vue
+                    if (result.tags.DateTimeOriginal) {
+                        // Convertit la date EXIF en format ISO si possible
+                        shotDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString();
                     }
                 }
 
-                console.log("Raw EXIF DateTimeOriginal:", result.tags.DateTimeOriginal);
-
+                console.log("Raw EXIF :", result.tags);
             } catch (error) {
                 console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
             }
         }
 
-
-        // Insère les données de l'image dans la base de données
-        // NOTE: Ajout de 'photoType' à l'instruction d'insertion
-        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation) VALUES(?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellationsString], function (err) {
+        // Insère les données de l'image et les données EXIF dans la base de données
+        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath], function (err) {
             if (err) {
-                return console.log(err.message);
+                return console.error(err.message);
             }
             console.log(`A row has been inserted with rowid ${this.lastID}`);
+            // Informe le processus de rendu qu'une nouvelle image a été ajoutée
             event.reply("image-added", this.lastID);
         });
     });
@@ -205,7 +196,12 @@ function createDatabase() {
         opticalTube TEXT,
         mount TEXT,
         camera TEXT,
-        exposition TEXT
+        exposition TEXT,
+        darkPath TEXT,
+        flatPath TEXT,
+        brutPath TEXT,
+        offsetPath TEXT,
+        note TEXT
     )`, (err) => {
         if (err) {
             console.error(err.message);
@@ -265,3 +261,69 @@ ipcMain.on('get-skyobjects', (event) => {
         }
     });
 });
+
+
+
+ipcMain.on('update-image-field', (event, updatedField) => {
+    // Utilisez la décomposition pour obtenir l'ID et les autres champs
+    const { id, ...fields } = updatedField;
+
+    // Parcourir les champs pour mettre à jour (il peut y avoir plus d'un champ)
+    Object.entries(fields).forEach(([field, value]) => {
+        const sql = `UPDATE images SET ${field} = ? WHERE id = ?`;
+
+        db.run(sql, [value, id], function (err) {
+            if (err) {
+                event.reply('update-image-field-response', { success: false, error: err.message });
+                return console.error(err.message);
+            }
+            // 'this.changes' contient le nombre de lignes affectées
+            event.reply('update-image-field-response', { success: true, changes: this.changes });
+        });
+    });
+});
+
+
+
+
+ipcMain.on('export-db-to-json', (event) => {
+    console.log("Reçu export-db-to-json");
+
+    // Sélectionnez toutes les données de la table images
+    db.all('SELECT * FROM images', [], (err, rows) => {
+        if (err) {
+            console.error("Erreur lors de la récupération des données:", err.message);
+            event.reply('export-db-to-json-reply', { success: false, message: 'Erreur lors de la récupération des données.' });
+            return;
+        }
+
+        // Convertissez les données en chaîne JSON
+        const jsonData = JSON.stringify(rows, null, 2);
+
+        // Afficher la boîte de dialogue pour choisir l'emplacement
+        dialog.showSaveDialog({
+            title: "Sauvegarder le JSON",
+            defaultPath: "database_export.json",
+            filters: [{ name: "JSON Files", extensions: ["json"] }]
+        }).then(result => {
+            if (result.canceled) {
+                return;
+            }
+
+            const jsonFilePath = result.filePath;
+
+            // Écrivez les données dans le fichier JSON
+            fs.writeFile(jsonFilePath, jsonData, (err) => {
+                if (err) {
+                    console.error("Erreur lors de l'écriture du fichier JSON:", err.message);
+                    event.reply('export-db-to-json-reply', { success: false, message: "Erreur lors de l'écriture du fichier JSON." });
+                    return;
+                }
+
+                // Si tout s'est bien passé, envoyez une réponse réussie
+                event.reply('export-db-to-json-reply', { success: true, message: 'Exportation réussie!', path: jsonFilePath });
+            });
+        });
+    });
+});
+

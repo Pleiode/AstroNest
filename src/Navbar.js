@@ -1,6 +1,23 @@
 import React, { useEffect, useCallback, useState } from "react";
 import { Link, useLocation } from 'react-router-dom';
-import { Image as ImageIcon, Trash as TrashIcon } from 'react-feather';
+import { Image as ImageIcon, Trash as TrashIcon, Download } from 'react-feather';
+
+
+
+const exportDatabase = () => {
+  // Envoie un événement pour demander l'exportation
+  window.electron.ipcRenderer.send("export-db-to-json");
+
+  // Écoute de la réponse
+  window.electron.ipcRenderer.on("export-db-to-json-reply", (event, data) => {
+    if (data.success) {
+      alert("Base de données exportée avec succès !");
+    } else {
+      alert("Erreur lors de l'exportation de la base de données:" + data.error.message);
+    }
+  });
+};
+
 
 function Navbar() {
   const { pathname } = useLocation();
@@ -9,22 +26,34 @@ function Navbar() {
   return (
     <nav className="navbar">
 
-  
 
-      <ul className="navbar-links">
-        <li>
-          <Link to="/pictures" className={`nav-link ${pathname === "/pictures" ? 'active' : ''}`}>
-            <ImageIcon className='navbar-icon' />
-            Photo Library
-          </Link>
-        </li>
-        <li>
-          <Link to="/trash" className={`nav-link ${pathname === "/trash" ? 'active' : ''}`}>
-            <TrashIcon className='navbar-icon' />
-            Corbeille
-          </Link>
-        </li>
-      </ul>
+      <div>
+        <ul className="navbar-links">
+          <li>
+            <Link to="/pictures" className={`nav-link ${pathname === "/pictures" ? 'active' : ''}`}>
+              <ImageIcon className='navbar-icon' />
+              Photo Library
+            </Link>
+          </li>
+          <li>
+            <Link to="/trash" className={`nav-link ${pathname === "/trash" ? 'active' : ''}`}>
+              <TrashIcon className='navbar-icon' />
+              Corbeille
+            </Link>
+          </li>
+        </ul>
+
+      </div>
+
+      <div>
+
+        <button className="btn-export" onClick={exportDatabase}>
+          <Download strokeWidth={2} width={'16px'} />
+          Exporter JSON
+        </button>
+      </div>
+
+
     </nav>
   );
 }
