@@ -1,41 +1,55 @@
+/* Importing Roboto font from Google Fonts with the specified weights and display swap for performance */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap');
 
-
-
+/* Defining root variables to maintain a consistent theme and to make future edits more manageable */
 :root {
     --bg-color: #191919;
     --color-nav: #262626;
     --white: #cfcfcf;
-    --grey10: #939393;
     --grey10: #454545;
+    /* Removed duplicate --grey10 declaration for cleaner code */
     --grey20: #484848;
     --greyborder: #363636;
     --blue10: #7a78db;
     --blue20: #1D2437;
 }
 
+/* Styling for elements with class .focus to indicate focus state with a border and background color */
 .focus {
-background-color: #1f1f2d;
-    border-block: #7a78db solid 0.5px;
+    background-color: #1f1f2d;
+    border-block: var(--blue10) solid 0.5px;
 }
- 
+
+
+/* Full-height layout for html and body, and modal elements */
+html,
+body,
+.image-modal,
+.modal-content {
+    height: 100%;
+}
+
+
+/* Resetting default margin for the body and setting font and background */
 body {
     margin: 0;
     background-color: var(--bg-color);
-    font-family: 'Roboto';
+    font-family: 'Roboto', sans-serif;
+    /* Adding a sans-serif fallback */
     color: var(--white);
 }
 
+/* Paragraph styling with color and margin for block elements */
 p {
     color: var(--white);
     margin-block: 8px;
     font-size: 14px;
 }
 
+/* Heading styles with font size and weight adjustments */
 h1 {
     font-size: 24px;
     font-weight: 500;
-
 }
 
 h2 {
@@ -43,7 +57,6 @@ h2 {
     font-weight: 400;
     margin-block: 8px;
 }
-
 
 h4 {
     font-size: 14px;
@@ -53,7 +66,7 @@ h4 {
     color: var(--white);
 }
 
-
+/* Navbar styling with a fixed height and vertical layout */
 .navbar {
     border-right: 1px solid var(--greyborder);
     background-color: var(--color-nav);
@@ -65,6 +78,7 @@ h4 {
     box-sizing: border-box;
 }
 
+/* Header within the navbar with padding and border */
 header {
     display: flex;
     justify-content: space-between;
@@ -75,10 +89,9 @@ header {
     background-color: var(--color-nav);
     align-items: center;
     height: 40px;
-
 }
 
-
+/* Generic button styling with hover and active states for interaction feedback */
 button {
     -webkit-app-region: no-drag;
     display: flex;
@@ -95,7 +108,6 @@ button {
     color: var(--white);
 }
 
-
 button.primary {
     border: 1px solid #5250E1;
     background: #403DE3;
@@ -106,14 +118,11 @@ button.secondary {
     background: #363636;
 }
 
-button.tertiaire {
+button.tertiary {
     background-color: unset;
     padding: 0;
     border: unset;
 }
-
-
-
 
 button:hover {
     transition: 0.2s;
@@ -125,28 +134,8 @@ button:active {
     filter: brightness(1.4);
 }
 
-.btn-export {
-    width: 100%;
-    border-radius: 0;
-    background-color: unset;
-    color: var(--white);
-    border: unset;
-    border-top: 1px solid #363636;
-    padding-block: 22px;
-    background-color: var(--color-nav);
-    justify-content: center;
-}
 
-.btn-export:hover {
-    filter: brightness(1.2);
-}
-
-.btn-export:active {
-    filter: brightness(1.4);
-}
-
-
-
+/* Select element styling with custom arrow and padding */
 select {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -157,7 +146,6 @@ select {
     font-family: 'Roboto';
     color: var(--white);
     background-position-y: 5px;
-
     border-radius: 6px;
     border: 1px solid #484848;
     background: #363636;
@@ -181,8 +169,7 @@ select:active {
     filter: brightness(1.2);
 }
 
-
-
+/* Input styling with consistent border, padding, and font settings */
 input {
     width: 100%;
     font-size: 14px;
@@ -196,7 +183,6 @@ input {
     color: var(--white);
     box-sizing: border-box;
     transition: 0.2s;
-
 }
 
 input:hover {
@@ -210,12 +196,85 @@ input:focus {
     filter: brightness(1.2);
     transition: 0.2s;
     border: #7a78db solid 1px;
+}
 
+/* Upload input styling */
+input.upload {
+    background-color: unset;
+    padding: 0;
+    border: unset;
 }
 
 
+/* Textarea styling */
+textarea {
+    border: 1px solid #434343;
+    background: var(--greyborder);
+    color: var(--white);
+    border-radius: 6px;
+    font-family: 'Roboto';
+    padding: 6px;
+    box-sizing: border-box;
+}
+
+/* Focus state for textarea */
+textarea:focus {
+    outline: none;
+    filter: brightness(1.2);
+    transition: 0.2s;
+    border: var(--blue10) solid 1px;
+}
+
+/* Styling for select inputs within the detail section */
+select.input-details {
+    width: 70%;
+    height: 28px;
+    font-size: 12px;
+    padding-block: 0;
+    padding-right: 0;
+}
 
 
+/* Table styling */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* Table, rows, header, and cell styling */
+table,
+th,
+td {
+    border: 0.5px solid var(--greyborder);
+}
+
+th {
+    background-color: var(--color-nav);
+}
+
+table thead tr th {
+    text-transform: uppercase;
+    font-size: 12px;
+    padding-block: 6px;
+}
+
+/* Table cell styling */
+th,
+td {
+    font-weight: 400;
+    padding: 0px 12px;
+    text-align: left;
+    font-size: 14px;
+    color: #a2a2a2;
+    max-width: 100px;
+    overflow: auto;
+    white-space: nowrap;
+}
+
+/* Search input specific styling with background image for search icon */
 .search-input {
     -webkit-app-region: no-drag;
     display: flex;
@@ -225,13 +284,11 @@ input:focus {
     background: var(--greyborder);
     width: 100%;
     outline: none;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"  stroke="%23F0F0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23F0F0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-search"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>');
     background-repeat: no-repeat;
     background-position: 12px center;
-    /* Ajustez selon vos préférences */
-    background-size: 14px;
-    padding-left: 40px;
     background-size: 18px;
+    padding-left: 40px;
     font-size: 14px;
     font-weight: 400;
     font-family: 'Roboto';
@@ -260,7 +317,7 @@ input:focus {
     cursor: text;
 }
 
-
+/* Container styling with background color and padding */
 .container {
     background-color: var(--bg-color);
     height: 78vh;
@@ -268,11 +325,13 @@ input:focus {
     padding: 18px;
 }
 
+/* Unordered list styling for list items */
 ul {
     list-style-type: none;
     padding: 10px;
 }
 
+/* Navbar link styling with hover and focus states */
 .navbar-links {
     -webkit-app-region: no-drag;
     margin-top: 2em;
@@ -281,13 +340,11 @@ ul {
     gap: 6px;
 }
 
-
 .navbar-links a.active {
     background-color: var(--grey10);
     color: var(--white);
     transition: 0.2s;
 }
-
 
 .navbar-links a:hover {
     background-color: var(--grey10)
@@ -300,7 +357,6 @@ ul {
 .navbar-links a.active:hover {
     background-color: var(--grey10);
 }
-
 
 .navbar-links a {
     white-space: nowrap;
@@ -321,58 +377,7 @@ ul {
     transition: 0.2s;
 }
 
-
-
-
-
-.navbar-icon {
-    width: 18px;
-}
-
-
-.image-checkbox {
-    display: none;
-}
-
-.custom-checkbox {
-    opacity: 0;
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: rgba(255, 255, 255, 0.575);
-    border-radius: 50%;
-    /* rend la checkbox ronde */
-    width: 22px;
-    height: 22px;
-    cursor: pointer;
-    transition: opacity 0.1s;
-    /* Transition pour une apparition en douceur */
-}
-
-
-
-.custom-checkbox::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 16px;
-    height: 16px;
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" fill="%233829E8" viewBox="0 0 24 24"><path d="M9 21.5l-6.5-6.5 2.5-2.5 4 4L19 3l2.5 2.5L9 21.5z"/></svg>');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    opacity: 0;
-    transition: 0.1s;
-}
-
-.image-checkbox:checked+.custom-checkbox {
-    background-color: white;
-    /* Changer à la couleur bleue désirée */
-    opacity: 1;
-}
-
+/* Image container styles */
 .image-container {
     cursor: pointer;
 }
@@ -381,45 +386,33 @@ ul {
     opacity: 1;
 }
 
-.image-checkbox:checked+.custom-checkbox::before {
-    opacity: 1;
-    /* Affiche la coche bleue lorsque la checkbox est cochée */
-}
-
 .image-container.grid {
-    /* Styles existants pour la vue grille */
+    /* Existing styles for grid view */
 }
 
 .image-container.list {
     width: 100%;
     display: flex;
     align-items: center;
-    /* ... autres styles pour la vue liste ... */
+    /* Other styles for list view */
 }
 
-
-.image-checkbox:checked+.custom-checkbox,
-.image-container:hover .custom-checkbox {
-    opacity: 1;
-}
-
-
+/* Modal styling for image viewing */
 .image-modal {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0);
-    /* noir semi-transparent */
-
+    background-color: rgba(0, 0, 0, 0.5);
+    /* Semi-transparent black background */
     justify-content: center;
     align-items: center;
     z-index: 1000;
-    /* pour s'assurer qu'il s'affiche par-dessus les autres éléments */
+    /* Ensure it appears above other elements */
 }
 
-
+/* Styles for the selected image within the modal */
 .selected-image {
     max-width: 100%;
     max-height: 100%;
@@ -427,28 +420,25 @@ ul {
     height: auto;
     transform-origin: center center;
     z-index: 0;
-
 }
 
 .selected-image:active {
     cursor: grabbing;
-    /* Utilisez la couleur de bordure de votre choix */
 }
 
+/* Focus image style with border and rounded corners */
 .focus-image {
     border: var(--blue10) 1px solid;
     border-radius: 3px;
 }
 
-
+/* Close button styling within the modal */
 .close-button {
     position: absolute;
     top: 30px;
     left: 10px;
     background-color: transparent;
-    /* noir semi-transparent */
     color: var(--white);
-    /* texte blanc */
     border: none;
     border-radius: 5px;
     font-size: 16px;
@@ -456,7 +446,7 @@ ul {
     cursor: pointer;
     outline: none;
     z-index: 10;
-    /* pour s'assurer qu'il s'affiche par-dessus l'image */
+    /* Ensure it's above the image */
     width: 50px;
     height: 50px;
     align-items: center;
@@ -466,10 +456,7 @@ ul {
 
 .close-button:hover {
     transition: 0.2s;
-    position: absolute;
-
     background-color: rgba(255, 255, 255, 0.087);
-    /* noir semi-transparent */
     border-radius: 30px;
 }
 
@@ -478,15 +465,16 @@ ul {
     background-color: rgba(255, 255, 255, 0.249);
 }
 
-.button-close-detail {
 
+/* Close button style for detail view */
+.button-close-detail {
     position: absolute;
     top: 10px;
     right: 10px;
     background-color: transparent;
-    /* noir semi-transparent */
+    /* Semi-transparent background */
     color: #fff;
-    /* texte blanc */
+    /* White text */
     border: none;
     border-radius: 5px;
     font-size: 16px;
@@ -494,7 +482,7 @@ ul {
     cursor: pointer;
     outline: none;
     z-index: 10;
-    /* pour s'assurer qu'il s'affiche par-dessus l'image */
+    /* Ensures it displays over the image */
     width: 50px;
     height: 50px;
     align-items: center;
@@ -502,32 +490,26 @@ ul {
     display: flex;
 }
 
-html,
-body,
-.image-modal,
-.modal-content {
-    height: 100%;
-}
 
+
+/* Detail section styling */
 .details-section {
     padding: 20px;
-    /* Ajustez cette valeur selon vos besoins */
+    /* Adjustable based on needs */
     background-color: var(--color-nav);
     z-index: 1;
     right: 0;
     border-left: 1px solid var(--greyborder);
-
     display: flex;
     flex-direction: column;
-
     box-sizing: border-box;
     overflow: auto;
     height: calc(100vh - 65px);
+    /* Full height minus header size */
     width: 40%;
-
 }
 
-
+/* Paragraph styling within the detail section */
 .details-section div p {
     text-align: right;
     white-space: nowrap;
@@ -536,6 +518,7 @@ body,
     color: #939393;
 }
 
+/* Detail section input styling */
 .input-details {
     width: 70%;
     height: 28px;
@@ -543,100 +526,62 @@ body,
     margin: 4px;
 }
 
-select.input-details {
-    width: 70%;
-    height: 28px;
-    font-size: 12px;
-    padding-block: 0;
-    padding-right: 0;
-}
 
-
-
-
+/* Modal content layout */
 .image-modal .modal-content {
     display: flex;
     align-items: center;
 }
 
+/* Flex transitions for modal sections */
 .image-modal .image-section,
 .image-modal .details-section {
-
     transition: flex 0.3s ease;
-
     box-sizing: border-box;
 }
 
+/* Image section styling within the modal */
 .image-modal .image-section {
     flex: 1;
-    /* Prend toute la largeur disponible par défaut */
-
+    /* Takes full width by default */
 }
 
+/* Styling when the image section is in 'shrink' state */
 .image-modal .image-section.shrink {
     flex: 0.7;
-    /* Réduit à 60% de la largeur quand les détails sont visibles */
+    /* Reduces to 70% width when details are visible */
     background-color: black;
 }
 
+/* Details section in the modal */
 .image-modal .details-section {
     flex: 0.3;
-    /* Prend 40% de la largeur quand visible */
+    /* Takes 30% width when visible */
     height: 100%;
-    /* Prend toute la hauteur */
+    /* Takes full height */
     overflow-y: auto;
 }
 
-
+/* Selected image styling in the modal */
 .image-modal img.selected-image {
     width: 100%;
     max-width: 100%;
     max-height: 100vh;
-    /* hauteur maximale égale à la hauteur de la fenêtre */
+    /* Maximum height equal to window height */
     object-fit: contain;
-    /* maintient l'aspect ratio de l'image */
+    /* Maintains image aspect ratio */
     display: block;
-    /* pour éviter les espaces blancs autour de l'image */
+    /* Avoids white space around the image */
     margin: auto;
-    /* centre l'image horizontalement et verticalement */
+    /* Centers image horizontally and vertically */
 }
 
-
-
-
+/* Word wrap for paragraphs in detail section */
 .details-section p {
     word-wrap: break-word;
 }
 
-
-.action-bar {
-    display: flex;
-    align-items: center;
-    background-color: var(--blue20);
-    padding-block: 16px;
-    padding-inline: 24px;
-    justify-content: space-between;
-}
-
-
-.action-bar p {
-    font-size: 14px;
-    margin: 0;
-    color: var(--blue10);
-
-}
-
-
-.title-bar {
-
-    color: white;
-    height: 30px;
-    /*-webkit-app-region: drag;
-    /* Permet de déplacer la fenêtre en faisant glisser la barre de titre */
-    display: flex;
-    align-items: center;
-}
-
+/* Button styling */
 .button {
     width: 10px;
     height: 10px;
@@ -645,81 +590,7 @@ select.input-details {
     cursor: pointer;
 }
 
-#close-btn {
-    background-color: #ff5f56;
-}
-
-#minimize-btn {
-    background-color: #ffbd2e;
-}
-
-#maximize-btn {
-    background-color: #27c93f;
-}
-
-.overlay {
-    position: fixed;
-    /* Positionnement fixe par rapport à la fenêtre */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    /* Fond noir avec 70% d'opacité */
-    z-index: 1;
-    /* Assurez-vous qu'il s'affiche en dessous de votre modale */
-}
-
-.modal-import {
-    overflow: auto;
-    -webkit-app-region: no-drag;
-    box-sizing: border-box;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    position: fixed;
-    /* Utilisez 'fixed' pour positionner par rapport à la fenêtre et non à l'élément parent */
-    top: 50%;
-    /* Place la partie supérieure de la modale au milieu verticalement */
-    left: 50%;
-    /* Place le côté gauche de la modale au milieu horizontalement */
-    transform: translate(-50%, -50%);
-    /* Déplace la modale de 50% de sa largeur vers la gauche et de 50% de sa hauteur vers le haut pour la centrer parfaitement */
-    z-index: 1000;
-    /* Assurez-vous qu'il est au-dessus d'autres éléments de la page */
-    background-color: var(--bg-color);
-    padding: 24px;
-    min-width: 40%;
-}
-
-
-
-.tag {
-    gap: 10px;
-    display: inline-flex;
-    padding: 4px 8px;
-    background-color: #E3E3FD;
-    border-radius: 4px;
-    margin-right: 8px;
-    font-size: 14px;
-    color: #000091;
-    font-weight: 500;
-    text-transform: uppercase;
-    box-sizing: border-box;
-    width: fit-content;
-    align-items: center;
-    text-transform: uppercase;
-    cursor: pointer;
-}
-
-.tag:hover {
-    filter: brightness(1.2);
-    transition: 0.2s;
-}
-
-
+/* Suggestions box styling */
 .suggestions {
     background: var(--greyborder);
     box-shadow: 0px 2px 6px 0px rgba(0, 0, 18, 0.32);
@@ -731,71 +602,9 @@ select.input-details {
     width: 70%;
 }
 
-.bar-btn-import {
-    display: flex;
-    gap: 8px;
-    justify-content: right;
-    margin-top: 2em;
-    width: 100%;
-}
 
 
-.info {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.info p {
-    color: #88B2FF;
-}
-
-
-
-table {
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 6px;
-    overflow: hidden;
-    width: 100%;
-
-}
-
-
-table,
-th,
-td {
-    border: 0.5px solid var(--greyborder);
-}
-
-th {
-    background-color: var(--color-nav);
-
-}
-
-table thead tr th {
-    text-transform: uppercase;
-    font-size: 12px;
-    padding-block: 6px;
-}
-
-
-th,
-td {
-    font-weight: 400;
-    padding: 0px 12px;
-    text-align: left;
-    font-size: 14px;
-    color: #a2a2a2;
-    max-width: 100px;
-    overflow: auto;
-    white-space: nowrap;
-}
-
-
-
-
-
+/* Switch container styling */
 .switch-container {
     display: flex;
     align-items: center;
@@ -805,9 +614,9 @@ td {
     padding: 5px;
     gap: 8px;
     font-size: 14px;
-
 }
 
+/* Switch label styling */
 .switch-label {
     color: #a2a2a2;
     padding: 2px 15px;
@@ -816,35 +625,28 @@ td {
     display: flex;
     align-items: center;
     gap: 6px;
-
 }
 
+/* Hover effect for switch label */
 .switch-label:hover {
     filter: brightness(1.2);
 }
 
+/* Active state hover effect for switch label */
 .switch-label.active:hover {
     filter: brightness(1);
 }
 
-
+/* Active state switch label styling */
 .switch-label.active {
     background-color: #363636;
     border: 1px solid #484848;
     color: var(--white);
 }
 
-input.upload {
-    background-color: unset;
-    padding: 0;
-    border: unset;
-}
-
-.file-name {
-    font-size: 14px;
-}
 
 
+/* File upload container styling */
 .file-upload-container {
     display: flex;
     justify-content: space-between;
@@ -854,13 +656,16 @@ input.upload {
     gap: 8px;
 }
 
+/* File name styling */
 .file-name {
+    font-size: 14px;
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+/* File upload button styling */
 .file-upload-btn {
     border: 1px solid #484848;
     background: #363636;
@@ -878,6 +683,7 @@ input.upload {
     padding-inline: 14px;
 }
 
+/* Hover and active state for file upload button */
 .file-upload-btn:hover {
     filter: brightness(1.2);
 }
@@ -886,6 +692,7 @@ input.upload {
     filter: brightness(1.4);
 }
 
+/* Image container relative positioning */
 .image-container {
     position: relative;
 }
@@ -893,20 +700,23 @@ input.upload {
 
 
 
-textarea {
-    border: 1px solid #434343;
-    background: var(--greyborder);
+/* Specific button styles for export functionality */
+.btn-export {
+    width: 100%;
+    border-radius: 0;
+    background-color: unset;
     color: var(--white);
-    border-radius: 6px;
-    font-family: 'Roboto';
-    padding: 6px;
-    box-sizing: border-box;
+    border: unset;
+    border-top: 1px solid #363636;
+    padding-block: 22px;
+    background-color: var(--color-nav);
+    justify-content: center;
 }
 
-
-textarea:focus {
-    outline: none;
+.btn-export:hover {
     filter: brightness(1.2);
-    transition: 0.2s;
-    border: #7a78db solid 1px;
+}
+
+.btn-export:active {
+    filter: brightness(1.4);
 }
