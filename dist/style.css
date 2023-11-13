@@ -377,6 +377,10 @@ ul {
     transition: 0.2s;
 }
 
+.navbar-links svg {
+    width: 16px;
+}
+
 /* Image container styles */
 .image-container {
     cursor: pointer;
@@ -428,8 +432,9 @@ ul {
 
 /* Focus image style with border and rounded corners */
 .focus-image {
-    border: var(--blue10) 1px solid;
+    border: var(--blue10) 2px solid;
     border-radius: 3px;
+    opacity: 0.8;
 }
 
 /* Close button styling within the modal */
@@ -494,7 +499,7 @@ ul {
 
 /* Detail section styling */
 .details-section {
-    padding: 20px;
+  
     /* Adjustable based on needs */
     background-color: var(--color-nav);
     z-index: 1;
@@ -581,6 +586,11 @@ ul {
     word-wrap: break-word;
 }
 
+.section-details {
+    padding-inline: 20px;
+}
+
+
 /* Button styling */
 .button {
     width: 10px;
@@ -644,25 +654,30 @@ ul {
     color: var(--white);
 }
 
-
+.upload-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
 
 /* File upload container styling */
 .file-upload-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 100%;
+
     flex-direction: row-reverse;
     gap: 8px;
 }
 
 /* File name styling */
 .file-name {
-    font-size: 14px;
+    font-size: 12px;
     flex: 1;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    width: 10px;
 }
 
 /* File upload button styling */
@@ -676,11 +691,12 @@ ul {
     font-weight: 400;
     transition: 0.2s;
     border-radius: 6px;
-    font-size: 14px;
-    height: 34px;
+    font-size: 12px;
+    height: 28px;
     align-items: center;
     display: flex;
     padding-inline: 14px;
+    width: fit-content;
 }
 
 /* Hover and active state for file upload button */
@@ -719,4 +735,29 @@ ul {
 
 .btn-export:active {
     filter: brightness(1.4);
+}
+
+
+.separator {
+    margin-top: 18px;
+    border-top: 0.5px solid var(--grey10);
+}
+
+
+.skeleton {
+    width: 130px;
+    height: 100px;
+    background-color: var(--grey20);
+    animation: skeleton-loading 1s linear infinite alternate;
+    border-radius: 3px;
+}
+
+
+@keyframes skeleton-loading {
+    0% {
+        background-color: var(--color-nav);
+    }
+    100% {
+        background-color: var(--grey10);
+    }
 }

@@ -1,6 +1,5 @@
 import React from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import Container from './Container';
 import Navbar from './Navbar';

@@ -3,7 +3,6 @@ import React, { useEffect, useCallback, useState, useRef } from "react";
 
 // Importing "Upload" icon from 'react-feather' library
 import { Upload } from 'react-feather';
-import DetailsPanel from "./DetailsPanel";
 
 // Header component definition
 const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
@@ -21,10 +20,13 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
     // States for handling file information
     const [darkFileName, setDarkFileName] = useState('No file selected');
     const [darkPath, setDarkPath] = useState('');
+
     const [brutFileName, setBrutFileName] = useState('No file selected');
     const [brutPath, setBrutPath] = useState('');
+
     const [flatFileName, setFlatFileName] = useState('No file selected');
     const [flatPath, setFlatPath] = useState('');
+
     const [offsetFileName, setOffsetFileName] = useState('No file selected');
     const [offsetPath, setOffsetPath] = useState('');
 
@@ -120,6 +122,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                 objectType: objectType,
                 darkPath: darkPath,
                 brutPath: brutPath,
+                offsetPath : offsetPath,
             };
 
             setUploadingImage(currentUploadingImage);
@@ -127,7 +130,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
         });
         setSelectedFiles([]); // Réinitialiser la liste des fichiers
         setShowConfirmModal(false); // Fermer la modale de confirmation
-        setImportModalOpen(false); // Fermer la modale d'importation
+        setImportModalOpen(false); // Fermer la modale d'importation"
         window.electron.ipcRenderer.send('get-skyobjects');  // Demander les skyObjects mis à jour
 
         setLocation(""); // Réinitialiser la valeur de location
@@ -177,7 +180,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
             <input
                 ref={fileInputRef} // Référence pour accéder à cet élément
                 type="file"
-                accept="image/png, image/jpeg, image/raw, image/tiff"
+                accept="image/png, image/jpeg, image/raw, .fit, image/tiff"
                 style={{ display: 'none' }} // Caché à l'utilisateur
                 onChange={handleFileSelected} // Quand un fichier est sélectionné, 'onImportClick' est appelé
                 multiple // Permet la sélection de plusieurs fichiers en même temps

@@ -17,19 +17,29 @@ const Container = () => {
     const [showDetailsPanel, setShowDetailsPanel] = useState(true);
     const [selectedImages, setSelectedImages] = useState([]);
 
+
+     // States for handling file information
+     const [darkFileName, setDarkFileName] = useState('No file selected');
+     const [darkPath, setDarkFilePath] = useState('');
+ 
+     const [brutFileName, setBrutFileName] = useState('No file selected');
+     const [brutPath, setBrutFilePath] = useState('');
+
+     const [offsetFileName, setOffsetFileName] = useState('No file selected');
+     const [offsetPath, setOffsetFilePath] = useState('');
+
+
+     
     // State for tracking the type of image being uploaded
     const isSelected = (image) => {
         return selectedImages.some(selected => image.id === selected.id);
     };
-
-
 
     /**
      * Handles the click event on an image element.
      * If the ctrl key or meta key is pressed, toggles the selection of the image.
      * Otherwise, sets the selected images to the clicked image.
      * Also shows the details panel.
-
      */
     const handleImageClick = (image, event) => {
         if (event.ctrlKey || event.metaKey) {
@@ -221,8 +231,8 @@ const Container = () => {
     const handleBrutFileChange = (event) => {
         const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
         if (file) {
-            const brutPath = file.path;
-            setBrutFilePath(brutPath); // Mettre à jour le chemin du fichier dans l'état
+            const brutPath = file.path ;
+            setBrutFilePath(brutPath) // Mettre à jour le chemin du fichier dans l'état
             setBrutFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
 
             // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
@@ -253,6 +263,81 @@ const Container = () => {
             });
         }
     };
+
+
+    const handleDarkFileChange = (event) => {
+        const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
+        if (file) {
+            const darkPath = file.path ;
+            setDarkFilePath(darkPath) // Mettre à jour le chemin du fichier dans l'état
+            setDarkFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
+
+            // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
+            setSelectedImages(prevImages => {
+
+                const updatedImages = prevImages.map(img => ({
+                    ...img,
+                    ...selectedImages[0],
+                    path: darkPath,
+                    // Assurez-vous que 'path' est le nom de la propriété que vous utilisez pour le chemin du fichier dans vos objets image
+                }));
+
+                // Envoyez une mise à jour à l'IPCRenderer pour chaque image mise à jour
+                updatedImages.forEach(image => {
+                    window.electron.ipcRenderer.send('update-image-field', {
+                        id: image.id,
+                        darkPath: darkPath,
+                    });
+                });
+                console.log(darkPath);
+
+                return prevImages.map((img, index) => {
+                    if (index === 0) { // Supposons que vous mettez toujours à jour la première image
+                        return { ...img, darkPath: darkPath };
+                    }
+                    return img;
+                });
+            });
+        }
+    };
+
+    const handleOffsetFileChange = (event) => {
+        const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
+        if (file) {
+            const offsetPath = file.path ;
+            setOffsetFilePath(offsetPath) // Mettre à jour le chemin du fichier dans l'état
+            setOffsetFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
+
+            // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
+            setSelectedImages(prevImages => {
+
+                const updatedImages = prevImages.map(img => ({
+                    ...img,
+                    ...selectedImages[0],
+                    path: offsetPath,
+                    // Assurez-vous que 'path' est le nom de la propriété que vous utilisez pour le chemin du fichier dans vos objets image
+                }));
+
+                // Envoyez une mise à jour à l'IPCRenderer pour chaque image mise à jour
+                updatedImages.forEach(image => {
+                    window.electron.ipcRenderer.send('update-image-field', {
+                        id: image.id,
+                        offsetPath: offsetPath,
+                    });
+                });
+                console.log(offsetPath);
+
+                return prevImages.map((img, index) => {
+                    if (index === 0) { // Supposons que vous mettez toujours à jour la première image
+                        return { ...img, offsetPath: offsetPath };
+                    }
+                    return img;
+                });
+            });
+        }
+    };
+
+
 
 
     return (
@@ -324,6 +409,8 @@ const Container = () => {
                     handleInputChange={handleInputChange}
                     formatDate={formatDate}
                     handleBrutFileChange={handleBrutFileChange}
+                    handleDarkFileChange={handleDarkFileChange}
+                    handleOffsetFileChange={handleOffsetFileChange}
                     selectedImages={selectedImages}
                 />
 

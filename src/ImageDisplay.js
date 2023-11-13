@@ -1,6 +1,70 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as FITS from 'fitsjs'; // Exemple de bibliothèque, assurez-vous d'installer la bonne bibliothèque
 
-const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, handleImageDoubleClick, loadImageToCanvas, formatDate }) => {
+
+const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, handleImageDoubleClick, formatDate }) => {
+
+    const [convertedImages, setConvertedImages] = useState({});
+    const [loadingImages, setLoadingImages] = useState({});
+
+
+
+    const convertImage = (imagePath) => {
+        if (!convertedImages[imagePath]) {
+            setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
+            window.electron.ipcRenderer.send('convert-fit', imagePath);
+        }
+    };
+
+
+    // Convertir les images FITS en WebP
+    useEffect(() => {
+
+        sortedImages().forEach(image => {
+            if ((image.path.endsWith('.fit') || image.path.endsWith('.fits')) && !convertedImages[image.path]) {
+                convertImage(image.path);
+            }
+        });
+
+        const conversionListener = (event, { imagePath, convertedPath }) => {
+            setConvertedImages(prev => ({ ...prev, [imagePath]: convertedPath }));
+            setLoadingImages(prev => ({ ...prev, [imagePath]: false }));
+        };
+
+
+
+        window.electron.ipcRenderer.on('conversion-done', conversionListener);
+
+        return () => {
+            window.electron.ipcRenderer.off('conversion-done', conversionListener);
+        };
+    }, [sortedImages]);
+
+
+    // Charger les images FITS
+    const getImageSrc = (image) => {
+        return convertedImages[image.path] || image.path;
+    };
+
+
+
+    const renderImage = (image) => {
+        const isImageLoading = loadingImages[image.path];
+
+        return isImageLoading ? (
+            <div className="skeleton"></div>
+        ) : (
+            <img
+                loading='lazy'
+                onClick={(e) => handleImageClick(image, e)}
+                key={image.id}
+                src={getImageSrc(image)}
+                alt={`Image de ${image.name}`}
+                className={isSelected(image) ? 'focus-image' : ''}
+                style={{ width: 'auto', height: '100px' }}
+            />
+        );
+    };
 
 
     return (
@@ -11,17 +75,20 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                         <h2>{key}</h2>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'left' }}>
                             {imgs.map(image => (
-                                <div key={image.id} className={`image-container ${viewMode}`} style={{ position: 'relative' }}>
 
-                                    <img src={image.path}
-                                        alt={image.name}
-                                        onClick={(e) => handleImageClick(image, e)}
-                                        className={isSelected(image) ? 'focus-image' : ''}
-                                        style={{ height: "100px", width: 'auto' }} />
+                                <>
+                                    {/*<img src={image?.path} alt={image?.name} onClick={(e) => handleImageClick(image, e)} className={isSelected(image) ? 'focus-image' : ''} style={{ height: "100px", width: 'auto' }} />*/}
+                                    {renderImage(image)}
+                                </>
 
-                                </div>
+
+
+
+
                             ))}
                         </div>
+
+
                     </div>
                 ))
             ) : (
@@ -43,13 +110,14 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                                 key={image.id}
                             >
                                 <td className={isSelected(image) ? 'focus' : ''}  >
-                                    {image.path.endsWith('.tif') ? (
-                                        <canvas ref={canvas => loadImageToCanvas(image.path, image, (loadedCanvas) => {
-                                            canvas.parentNode.replaceChild(loadedCanvas, canvas);
-                                        })} />
-                                    ) : (
-                                        <img src={image.path} alt={image.name} style={{ height: "40px", width: 'auto' }} />
-                                    )}
+
+                                    <img
+                                        key={image.id}
+                                        src={getImageSrc(image)}
+                                        alt={image.name}
+                                        style={{ height: "100px", width: 'auto' }}
+                                    />
+
                                 </td>
                                 <td className={isSelected(image) ? 'focus' : ''} >{image.name}</td>
                                 <td className={isSelected(image) ? 'focus' : ''} >{image.photoType}</td>

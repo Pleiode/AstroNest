@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CSSTransition } from 'react-transition-group';
 import { ArrowLeft, X, Info } from 'react-feather';
-import Tiff from 'tiff.js';
 
 // Composant de la modal d'image avec détails
 const ImageModal = ({ isOpen, image, onClose, loadImageToCanvas }) => {

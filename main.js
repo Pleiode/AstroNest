@@ -5,9 +5,10 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
-const { spawn } = require('child_process');
+const async = require('async'); 
 
 
+const { exec } = require('child_process');
 
 // Obtient le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
@@ -80,7 +81,7 @@ function createWindow() {
     // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
     ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
         // Destructuration de l'objet pour extraire les propriétés nécessaires
-        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath } = currentUploadingImage;
+        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath } = currentUploadingImage;
 
         // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
         const skyObjectString = skyObject.join(', ');
@@ -122,7 +123,7 @@ function createWindow() {
         }
 
         // Insère les données de l'image et les données EXIF dans la base de données
-        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath], function (err) {
+        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath, offsetPath], function (err) {
             if (err) {
                 return console.error(err.message);
             }
@@ -327,3 +328,23 @@ ipcMain.on('export-db-to-json', (event) => {
     });
 });
 
+
+
+ipcMain.on('convert-fit', (event, imagePath) => {
+    const scriptPath = path.join(app.getAppPath(), 'test.py');
+
+    // Créer une file d'attente avec un nombre défini de processus simultanés
+    const queue = async.queue((task, callback) => {
+        exec(`python3 "${scriptPath}" "${task.imagePath}"`, (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Erreur de conversion: ${error}`);
+                return callback(error);
+            }
+            event.reply('conversion-done', { imagePath: task.imagePath, convertedPath: stdout.trim() });
+            callback();
+        });
+    }, 1); // Le '2' ici représente le nombre de processus simultanés
+
+    // Ajouter des tâches à la file d'attente
+    queue.push({ imagePath });
+});
