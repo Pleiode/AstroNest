@@ -8,17 +8,42 @@ const exifParser = require('exif-parser');
 const async = require('async'); 
 
 
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 
 // Obtient le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
 
 // Définit le chemin complet de votre base de données
-const dbPath = path.join(__dirname, 'Database.db');
+let dbPath;
+
+if (process.env.NODE_ENV === 'development') {
+    // En mode développement
+    dbPath = path.join(__dirname, 'Database.db');
+} else {
+    // En mode production
+    dbPath = path.join(process.resourcesPath, 'Database.db');
+}
+
+
 console.log("Database path:", dbPath);
 
 let win;
 let db;
+
+
+// Définissez le chemin du fichier de journalisation
+const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userData est un répertoire approprié pour stocker des données d'application
+
+// Redirigez la sortie de la console vers le fichier de journalisation
+const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+console.log = (message) => {
+  logStream.write(`${message}\n`);
+  process.stdout.write(`${message}\n`);
+};
+console.error = (message) => {
+  logStream.write(`ERROR: ${message}\n`);
+  process.stderr.write(`ERROR: ${message}\n`);
+};
 
 
 if (process.env.NODE_ENV === 'production') {
@@ -50,6 +75,7 @@ function createWindow() {
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
 
+    
     // Crée la base de données lors du lancement de l'application
     createDatabase();
 
@@ -81,7 +107,7 @@ function createWindow() {
     // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
     ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
         // Destructuration de l'objet pour extraire les propriétés nécessaires
-        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath } = currentUploadingImage;
+        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath } = currentUploadingImage;
 
         // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
         const skyObjectString = skyObject.join(', ');
@@ -123,7 +149,7 @@ function createWindow() {
         }
 
         // Insère les données de l'image et les données EXIF dans la base de données
-        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath, offsetPath], function (err) {
+        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath, offsetPath, flatPath], function (err) {
             if (err) {
                 return console.error(err.message);
             }
@@ -330,21 +356,53 @@ ipcMain.on('export-db-to-json', (event) => {
 
 
 
+
+process.env.APP_ROOT_PATH = path.join(__dirname, '..');
+
+
+
 ipcMain.on('convert-fit', (event, imagePath) => {
-    const scriptPath = path.join(app.getAppPath(), 'test.py');
+    const scriptName = 'converter'; // Assurez-vous que c'est le bon nom de fichier
+
+    const scriptPath = path.join(__dirname, '..', 'python_exec', scriptName);
 
     // Créer une file d'attente avec un nombre défini de processus simultanés
     const queue = async.queue((task, callback) => {
-        exec(`python3 "${scriptPath}" "${task.imagePath}"`, (error, stdout, stderr) => {
+        exec(`"${scriptPath}" "${task.imagePath}"`, (error, stdout, stderr) => { 
+
             if (error) {
                 console.error(`Erreur de conversion: ${error}`);
-                return callback(error);
+                return;
             }
+            console.log(`stdout: ${stdout}`);
+            console.error(`stderr: ${stderr}`);
+
             event.reply('conversion-done', { imagePath: task.imagePath, convertedPath: stdout.trim() });
+            
             callback();
         });
-    }, 1); // Le '2' ici représente le nombre de processus simultanés
+    }, 2); // Le '2' ici représente le nombre de processus simultanés
 
     // Ajouter des tâches à la file d'attente
     queue.push({ imagePath });
+});
+
+
+
+ipcMain.on('start-blink', (event, imagePaths) => {
+    const scriptPath = getPythonScriptPath('blink');
+
+    const pythonProcess = spawn('python3', [scriptPath, ...imagePaths]);
+
+    pythonProcess.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+        console.error(`stderr: ${data}`);
+    });
+
+    pythonProcess.on('close', (code) => {
+        console.log(`child process exited with code ${code}`);
+    });
 });

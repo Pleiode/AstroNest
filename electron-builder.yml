@@ -1,0 +1,10 @@
+productName: "Meridio"
+appId: "com.exemple.votreapp"
+directories:
+  output: "build"
+files:
+  - "**/*"
+  - "python_exec/**/*"
+extraResources:
+  - "python_exec/**/*"
+

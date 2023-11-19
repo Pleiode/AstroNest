@@ -1,8 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as FITS from 'fitsjs'; // Exemple de bibliothèque, assurez-vous d'installer la bonne bibliothèque
+import { format, parse } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 
 const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, handleImageDoubleClick, formatDate }) => {
+
 
     const [convertedImages, setConvertedImages] = useState({});
     const [loadingImages, setLoadingImages] = useState({});
@@ -41,6 +43,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     }, [sortedImages]);
 
 
+    
     // Charger les images FITS
     const getImageSrc = (image) => {
         return convertedImages[image.path] || image.path;
@@ -66,24 +69,34 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
         );
     };
 
+    
+    const DateEnLettres = ({ dateKey }) => {
+        if (!dateKey) {
+          return <h2>Chargement de la date...</h2>;
+        }
+      
+        const dateParts = dateKey.split('/');
+        const date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+        const dateFormatee = format(date, 'dd MMMM yyyy', { locale: fr });
+      
+        return <h2>{dateFormatee}</h2>;
+      };
+      
 
     return (
         <div className="container" >
             {viewMode === 'grid' ? (
                 Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key}>
-                        <h2>{key}</h2>
+                        
+                        <DateEnLettres dateKey={key} />
+
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'left' }}>
                             {imgs.map(image => (
-
                                 <>
                                     {/*<img src={image?.path} alt={image?.name} onClick={(e) => handleImageClick(image, e)} className={isSelected(image) ? 'focus-image' : ''} style={{ height: "100px", width: 'auto' }} />*/}
                                     {renderImage(image)}
                                 </>
-
-
-
-
 
                             ))}
                         </div>

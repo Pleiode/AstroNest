@@ -18,18 +18,19 @@ const Container = () => {
     const [selectedImages, setSelectedImages] = useState([]);
 
 
-     // States for handling file information
-     const [darkFileName, setDarkFileName] = useState('No file selected');
-     const [darkPath, setDarkFilePath] = useState('');
- 
-     const [brutFileName, setBrutFileName] = useState('No file selected');
-     const [brutPath, setBrutFilePath] = useState('');
+    // States for handling file information
+    const [darkFileName, setDarkFileName] = useState('No file selected');
+    const [darkPath, setDarkFilePath] = useState('');
 
-     const [offsetFileName, setOffsetFileName] = useState('No file selected');
-     const [offsetPath, setOffsetFilePath] = useState('');
+    const [brutFileName, setBrutFileName] = useState('No file selected');
+    const [brutPath, setBrutFilePath] = useState('');
 
+    const [offsetFileName, setOffsetFileName] = useState('No file selected');
+    const [offsetPath, setOffsetFilePath] = useState('');
 
-     
+    const [flatFileName, setFlatFileName] = useState('No file selected');
+    const [flatPath, setFlatFilePath] = useState('');
+
     // State for tracking the type of image being uploaded
     const isSelected = (image) => {
         return selectedImages.some(selected => image.id === selected.id);
@@ -56,7 +57,7 @@ const Container = () => {
         }
         setShowDetailsPanel(true);
     };
-    
+
 
 
     const handleDelete = id => window.electron.ipcRenderer.send("delete-image", id);
@@ -227,112 +228,38 @@ const Container = () => {
     };
 
 
-
-    const handleBrutFileChange = (event) => {
-        const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
+    const handlePathFileChange = (type, event) => {
+        const file = event.target.files[0];
         if (file) {
-            const brutPath = file.path ;
-            setBrutFilePath(brutPath) // Mettre à jour le chemin du fichier dans l'état
-            setBrutFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
+            const filePath = file.path;
+            const updateFunction = {
+                brut: setBrutFilePath,
+                dark: setDarkFilePath,
+                offset: setOffsetFilePath,
+                flat: setFlatFilePath,
+            }[type];
+            const fileNameFunction = {
+                brut: setBrutFileName,
+                dark: setDarkFileName,
+                offset: setOffsetFileName,
+                flat: setFlatFileName,
+            }[type];
 
-            // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
+            updateFunction(filePath);
+            fileNameFunction(file.name);
+
             setSelectedImages(prevImages => {
+                const updatedFirstImage = {
+                    ...prevImages[0],
+                    [`${type}Path`]: filePath
+                };
 
-                const updatedImages = prevImages.map(img => ({
-                    ...img,
-                    ...selectedImages[0],
-                    path: brutPath,
-                    // Assurez-vous que 'path' est le nom de la propriété que vous utilisez pour le chemin du fichier dans vos objets image
-                }));
-
-                // Envoyez une mise à jour à l'IPCRenderer pour chaque image mise à jour
-                updatedImages.forEach(image => {
-                    window.electron.ipcRenderer.send('update-image-field', {
-                        id: image.id,
-                        brutPath: brutPath,
-                    });
+                window.electron.ipcRenderer.send('update-image-field', {
+                    id: updatedFirstImage.id,
+                    [`${type}Path`]: filePath,
                 });
-                console.log(brutPath);
 
-                return prevImages.map((img, index) => {
-                    if (index === 0) { // Supposons que vous mettez toujours à jour la première image
-                        return { ...img, brutPath: brutPath };
-                    }
-                    return img;
-                });
-            });
-        }
-    };
-
-
-    const handleDarkFileChange = (event) => {
-        const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
-        if (file) {
-            const darkPath = file.path ;
-            setDarkFilePath(darkPath) // Mettre à jour le chemin du fichier dans l'état
-            setDarkFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
-
-            // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
-            setSelectedImages(prevImages => {
-
-                const updatedImages = prevImages.map(img => ({
-                    ...img,
-                    ...selectedImages[0],
-                    path: darkPath,
-                    // Assurez-vous que 'path' est le nom de la propriété que vous utilisez pour le chemin du fichier dans vos objets image
-                }));
-
-                // Envoyez une mise à jour à l'IPCRenderer pour chaque image mise à jour
-                updatedImages.forEach(image => {
-                    window.electron.ipcRenderer.send('update-image-field', {
-                        id: image.id,
-                        darkPath: darkPath,
-                    });
-                });
-                console.log(darkPath);
-
-                return prevImages.map((img, index) => {
-                    if (index === 0) { // Supposons que vous mettez toujours à jour la première image
-                        return { ...img, darkPath: darkPath };
-                    }
-                    return img;
-                });
-            });
-        }
-    };
-
-    const handleOffsetFileChange = (event) => {
-        const file = event.target.files[0]; // Obtenez le premier fichier sélectionné
-        if (file) {
-            const offsetPath = file.path ;
-            setOffsetFilePath(offsetPath) // Mettre à jour le chemin du fichier dans l'état
-            setOffsetFileName(file.name); // Mettre à jour le nom du fichier dans l'état si nécessaire
-
-            // Mise à jour de l'état de selectedImages avec le nouveau chemin du fichier
-            setSelectedImages(prevImages => {
-
-                const updatedImages = prevImages.map(img => ({
-                    ...img,
-                    ...selectedImages[0],
-                    path: offsetPath,
-                    // Assurez-vous que 'path' est le nom de la propriété que vous utilisez pour le chemin du fichier dans vos objets image
-                }));
-
-                // Envoyez une mise à jour à l'IPCRenderer pour chaque image mise à jour
-                updatedImages.forEach(image => {
-                    window.electron.ipcRenderer.send('update-image-field', {
-                        id: image.id,
-                        offsetPath: offsetPath,
-                    });
-                });
-                console.log(offsetPath);
-
-                return prevImages.map((img, index) => {
-                    if (index === 0) { // Supposons que vous mettez toujours à jour la première image
-                        return { ...img, offsetPath: offsetPath };
-                    }
-                    return img;
-                });
+                return [updatedFirstImage, ...prevImages.slice(1)];
             });
         }
     };
@@ -374,8 +301,8 @@ const Container = () => {
                         </div>
 
                         <div className="switch-container" onClick={() => setViewMode(prevMode => prevMode === 'grid' ? 'list' : 'grid')}>
-                            <span className={`switch-label ${viewMode === 'list' ? 'active' : ''}`}> <List strokeWidth={2} width={'16px'} /> Liste</span>
                             <span className={`switch-label ${viewMode === 'grid' ? 'active' : ''}`}> <Grid strokeWidth={2} width={'16px'} /> Grille</span>
+                            <span className={`switch-label ${viewMode === 'list' ? 'active' : ''}`}> <List strokeWidth={2} width={'16px'} /> Liste</span>
                         </div>
 
                     </div>
@@ -389,6 +316,7 @@ const Container = () => {
                         handleImageClick={handleImageClick}
                         isSelected={isSelected}
                         formatDate={formatDate}
+
                     />
 
 
@@ -404,13 +332,13 @@ const Container = () => {
 
 
                 <DetailsPanel
+                    isSelected={isSelected}
+                    sortedImages={sortedImages}
                     selectedImage={selectedImages[0]}
                     handleDelete={handleDelete}
                     handleInputChange={handleInputChange}
                     formatDate={formatDate}
-                    handleBrutFileChange={handleBrutFileChange}
-                    handleDarkFileChange={handleDarkFileChange}
-                    handleOffsetFileChange={handleOffsetFileChange}
+                    handlePathFileChange={handlePathFileChange}
                     selectedImages={selectedImages}
                 />
 
