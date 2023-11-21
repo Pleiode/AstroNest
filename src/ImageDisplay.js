@@ -43,7 +43,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     }, [sortedImages]);
 
 
-    
+
     // Charger les images FITS
     const getImageSrc = (image) => {
         return convertedImages[image.path] || image.path;
@@ -69,26 +69,28 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
         );
     };
 
-    
+
     const DateEnLettres = ({ dateKey }) => {
         if (!dateKey) {
-          return <h2>Chargement de la date...</h2>;
+            return <h2>Chargement de la date...</h2>;
         }
-      
+
         const dateParts = dateKey.split('/');
         const date = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
         const dateFormatee = format(date, 'dd MMMM yyyy', { locale: fr });
-      
+
         return <h2>{dateFormatee}</h2>;
-      };
-      
+    };
+
+
+ 
 
     return (
         <div className="container" >
             {viewMode === 'grid' ? (
                 Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key}>
-                        
+
                         <DateEnLettres dateKey={key} />
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', justifyContent: 'left' }}>

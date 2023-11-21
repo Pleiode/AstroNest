@@ -5,7 +5,6 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
-const async = require('async'); 
 
 
 const { exec, spawn } = require('child_process');
@@ -37,12 +36,12 @@ const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userDa
 // Redirigez la sortie de la console vers le fichier de journalisation
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 console.log = (message) => {
-  logStream.write(`${message}\n`);
-  process.stdout.write(`${message}\n`);
+    logStream.write(`${message}\n`);
+    process.stdout.write(`${message}\n`);
 };
 console.error = (message) => {
-  logStream.write(`ERROR: ${message}\n`);
-  process.stderr.write(`ERROR: ${message}\n`);
+    logStream.write(`ERROR: ${message}\n`);
+    process.stderr.write(`ERROR: ${message}\n`);
 };
 
 
@@ -75,7 +74,7 @@ function createWindow() {
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
 
-    
+
     // Crée la base de données lors du lancement de l'application
     createDatabase();
 
@@ -361,30 +360,25 @@ process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 
 
+
 ipcMain.on('convert-fit', (event, imagePath) => {
-    const scriptName = 'converter'; // Assurez-vous que c'est le bon nom de fichier
+    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
+    const scriptPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, './converter', scriptName);
+    
 
-    const scriptPath = path.join(__dirname, '..', 'python_exec', scriptName);
+    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur de conversion: ${error}`);
+            event.reply('conversion-error', error.message); // Envoyer l'erreur au frontend
+            return;
+        }
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
 
-    // Créer une file d'attente avec un nombre défini de processus simultanés
-    const queue = async.queue((task, callback) => {
-        exec(`"${scriptPath}" "${task.imagePath}"`, (error, stdout, stderr) => { 
-
-            if (error) {
-                console.error(`Erreur de conversion: ${error}`);
-                return;
-            }
-            console.log(`stdout: ${stdout}`);
-            console.error(`stderr: ${stderr}`);
-
-            event.reply('conversion-done', { imagePath: task.imagePath, convertedPath: stdout.trim() });
-            
-            callback();
-        });
-    }, 2); // Le '2' ici représente le nombre de processus simultanés
-
-    // Ajouter des tâches à la file d'attente
-    queue.push({ imagePath });
+        event.reply('conversion-done', { imagePath: imagePath, convertedPath: stdout.trim() });
+    });
 });
 
 
@@ -406,3 +400,5 @@ ipcMain.on('start-blink', (event, imagePaths) => {
         console.log(`child process exited with code ${code}`);
     });
 });
+
+

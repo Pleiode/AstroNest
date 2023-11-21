@@ -7,67 +7,58 @@ import asyncio
 import numpy as np
 from astropy.io import fits
 from PIL import Image
-
-
-
+from concurrent.futures import ThreadPoolExecutor
 
 output_directory = os.getenv('APP_ROOT_PATH', os.path.join(os.path.dirname(__file__), 'cache-images'))
+semaphore = asyncio.Semaphore(2)  # Limite de 10 tâches simultanées
 
+async def normalize_data(data, loop):
+    def normalize_sync(data):
+        data_min = data.min()
+        data_max = data.max()
+        return ((data - data_min) / (data_max - data_min) * 255).astype(np.uint8)
 
-async def normalize_data(data):
-    # Normaliser les données pour couvrir la plage 0-255
-    data_min = data.min()
-    data_max = data.max()
-    return ((data - data_min) / (data_max - data_min) * 255).astype(np.uint8)
+    return await loop.run_in_executor(None, normalize_sync, data)
 
-async def convert_fits_to_webp(input_path, output_directory, max_size=200):
-    # Vérifier si le fichier d'entrée existe
-    if not os.path.exists(input_path):
-        print(f"Le fichier spécifié n'a pas été trouvé: {input_path}")
-        return
+async def convert_fits_to_webp(input_path, output_directory, max_size=200, loop=None):
+    async with semaphore:
+        if not os.path.exists(input_path):
+            print(f"Le fichier spécifié n'a pas été trouvé: {input_path}")
+            return
 
-    # Créer le répertoire de sortie s'il n'existe pas
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+        if not os.path.exists(output_directory):
+            os.makedirs(output_directory)
 
-    # Construire le chemin de sortie
-    base_filename = os.path.basename(input_path)
-    output_filename = base_filename.replace(".fits", ".webp").replace(".fit", ".webp")
-    output_path = os.path.join(output_directory, output_filename)
+        base_filename = os.path.basename(input_path)
+        output_filename = base_filename.replace(".fits", ".webp").replace(".fit", ".webp")
+        output_path = os.path.join(output_directory, output_filename)
 
-    # Vérifier si l'image WebP existe déjà
-    if os.path.exists(output_path):
-        print(output_path)  # Retourner le chemin si l'image existe déjà
-        return
+        if os.path.exists(output_path):
+            print(output_path)
+            return
 
-    # Lire seulement les données d'image du fichier FITS
-    try:
-        data = fits.getdata(input_path)
-    except Exception as e:
-        print(f"Erreur lors de la lecture du fichier FITS: {e}")
-        return
+        try:
+            data = fits.getdata(input_path)
+        except Exception as e:
+            print(f"Erreur lors de la lecture du fichier FITS: {e}")
+            return
 
-    # Normaliser les données
-    normalized_data = await normalize_data(data)
+        normalized_data = await normalize_data(data, loop)
 
-    # Convertir les données en une image PIL
-    image = Image.fromarray(normalized_data, 'L')  # 'L' pour les images en niveaux de gris
+        image = Image.fromarray(normalized_data, 'L')
+        width, height = image.size
+        scale = min(max_size / height, max_size / width)
+        if scale < 1:
+            image = image.resize((int(width*scale), int(height*scale)), Image.Resampling.LANCZOS)
 
-    # Redimensionner l'image si nécessaire
-    width, height = image.size
-    scale = min(max_size / height, max_size / width)
-    if scale < 1:
-        image = image.resize((int(width*scale), int(height*scale)), Image.Resampling.LANCZOS)
-
-    # Enregistrer l'image en format WebP
-    image.save(output_path, 'WEBP')
-
-    print(output_path)
+        image.save(output_path, 'WEBP')
+        print(output_path)
 
 async def process_files(file_paths, output_directory):
+    loop = asyncio.get_running_loop()
     tasks = []
     for input_path in file_paths:
-        task = asyncio.create_task(convert_fits_to_webp(input_path, output_directory))
+        task = asyncio.create_task(convert_fits_to_webp(input_path, output_directory, loop=loop))
         tasks.append(task)
     await asyncio.gather(*tasks)
 

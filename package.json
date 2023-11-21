@@ -6,12 +6,29 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=development electron .",
-  
     "webpack": "webpack",
     "webpack:watch": "webpack --watch",
     "start:dev": "webpack-dev-server --mode development",
     "pack": "electron-builder --dir",
     "dist": "electron-builder"
+  },
+  "build": {
+    "directories": {
+      "output": "build"
+    },
+    "appId": "votre.id.d.application",
+    "mac": {
+      "target": "dmg"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "extraResources": [
+      {
+        "from": "./converter",
+        "to": "converter"
+      }
+    ]
   },
   "keywords": [],
   "author": "",
@@ -24,6 +41,7 @@
     "crypto-browserify": "^3.12.0",
     "date-fns": "^2.30.0",
     "easy-fit": "^0.0.8",
+    "electron-updater": "^6.1.4",
     "exif-parser": "^0.1.12",
     "exifreader": "^4.16.0",
     "feather-icons": "^4.29.1",
