@@ -2,7 +2,7 @@
 import React, { useEffect, useCallback, useState, useRef } from "react";
 
 // Importing "Upload" icon from 'react-feather' library
-import { Upload } from 'react-feather';
+import { Upload, Download } from 'react-feather';
 
 // Header component definition
 const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
@@ -173,7 +173,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
 
             {/*// Bouton pour importer des fichiers */}
             <button className='secondary' onClick={handleImportClick}>
-                <Upload strokeWidth={2} width={'16px'} />Importer   {/*Importer // Icône d'upload et texte "Importer" */}
+                <Download strokeWidth={2} width={'16px'} />Importer   {/*Importer // Icône d'upload et texte "Importer" */}
             </button>
 
             {/*// Champ input caché pour le chargement des fichiers */}

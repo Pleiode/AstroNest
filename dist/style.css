@@ -62,7 +62,7 @@ h2 {
 h4 {
     font-size: 12px;
     font-weight: 400;
-    margin-block-start: 20px;
+    margin-block-start: 0;
     margin-block-end: 8px;
     color: var(--white);
     text-transform: uppercase;
@@ -106,7 +106,7 @@ button {
     transition: 0.2s;
     border-radius: 6px;
     font-size: 14px;
-    height: 34px;
+  
     color: var(--white);
 }
 
@@ -118,6 +118,26 @@ button.primary {
 button.secondary {
     border: 1px solid #484848;
     background: #363636;
+}
+
+button.special {
+    display: flex;
+    padding: 8px 8px;
+    align-items: center;
+    gap: 6px;
+    border-radius: 6px;
+    border: none;
+    font-size: 12px;
+    background-color: var(--greyborder);
+    font-weight: 400;
+    color: var(--white);
+    border: 1px solid #484848;
+}
+
+button.special.inactive {
+    filter: grayscale(1);
+    opacity: 0.5;
+    cursor: default;
 }
 
 button.tertiary {
@@ -322,9 +342,11 @@ td {
 /* Container styling with background color and padding */
 .container {
     background-color: var(--bg-color);
-    height: 78vh;
+    height: calc(100vh - 141px);
     overflow: auto;
     padding-inline: 18px;
+    padding-block-end: 5em;
+    box-sizing: border-box;
 }
 
 /* Unordered list styling for list items */
@@ -434,9 +456,10 @@ ul {
 
 /* Focus image style with border and rounded corners */
 .focus-image {
-    border: var(--blue10) 2px solid;
-    border-radius: 3px;
-    opacity: 0.8;
+    border: var(--blue10) 1px solid;
+
+    opacity: 0.7;
+    box-sizing: border-box;
 }
 
 /* Close button styling within the modal */
@@ -513,6 +536,7 @@ ul {
     height: calc(100vh - 65px);
     /* Full height minus header size */
     width: 40%;
+
 }
 
 /* Paragraph styling within the detail section */
@@ -588,7 +612,8 @@ ul {
 }
 
 .section-details {
-    padding-inline: 20px;
+    padding-inline: 16px;
+    padding-block: 16px;
 }
 
 
@@ -715,8 +740,6 @@ ul {
 }
 
 
-
-
 /* Specific button styles for export functionality */
 .btn-export {
     width: 100%;
@@ -725,7 +748,7 @@ ul {
     color: var(--white);
     border: unset;
     border-top: 1px solid #363636;
-    padding-block: 22px;
+    padding-block: 12px;
     background-color: var(--color-nav);
     justify-content: center;
 }
@@ -740,7 +763,6 @@ ul {
 
 
 .separator {
-    margin-top: 18px;
     border-top: 0.5px solid var(--grey10);
 }
 
@@ -758,7 +780,42 @@ ul {
     0% {
         background-color: var(--color-nav);
     }
+
     100% {
         background-color: var(--grey10);
     }
+}
+
+
+/* Style pour le conteneur de l'image en plein écran */
+.fullscreen-image-container {
+    position: fixed;
+    /* Positionnement fixe pour rester au-dessus de tout */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: black;
+    /* Fond semi-transparent */
+    display: flex;
+    align-items: center;
+    /* Centrer verticalement */
+    justify-content: center;
+    /* Centrer horizontalement */
+    z-index: 1000;
+    /* S'assurer qu'il est au-dessus de tout */
+}
+
+/* Style pour l'image en plein écran */
+.fullscreen-image {
+    max-width: 100%;
+    /* Largeur maximale de l'image */
+    max-height: 100%;
+    /* Hauteur maximale de l'image */
+    margin: auto;
+    /* Pour centrer l'image */
+
+    cursor: grab;
+    transition: transform 0.25s ease;
+    transform-origin: center;
 }

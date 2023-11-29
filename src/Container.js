@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Header from './Header';
 import { Grid, List } from 'react-feather';
-import ImageModal from './ImageModal';
 import DetailsPanel from "./DetailsPanel";
 import ImageDisplay from "./ImageDisplay";
 
@@ -60,7 +59,6 @@ const Container = () => {
 
 
 
-    const handleDelete = id => window.electron.ipcRenderer.send("delete-image", id);
 
 
 
@@ -96,18 +94,6 @@ const Container = () => {
             });
         } else {
             return objectSort === 'all' ? sorted : sorted.filter(img => img.skyObject === objectSort);
-        }
-    };
-
-
-    const handleImageActions = {
-        click: (image) => {
-            setSelectedImage(image);
-            setModalOpen(true);
-            console.log("Modal should be open now!");
-        },
-        close: () => {
-            setModalOpen(false);
         }
     };
 
@@ -307,7 +293,6 @@ const Container = () => {
 
                     </div>
 
-
                     <ImageDisplay
                         viewMode={viewMode}
                         sortedImages={sortedImages}
@@ -316,17 +301,8 @@ const Container = () => {
                         handleImageClick={handleImageClick}
                         isSelected={isSelected}
                         formatDate={formatDate}
-
                     />
 
-
-
-                    <ImageModal
-                        isOpen={isModalOpen}
-                        image={selectedImage}
-                        onClose={handleImageActions.close}
-                        loadImageToCanvas={(src, img, cb) => loadImageToCanvas(src, img, cb, viewMode)}
-                    />
                 </div>
 
 
@@ -335,7 +311,6 @@ const Container = () => {
                     isSelected={isSelected}
                     sortedImages={sortedImages}
                     selectedImage={selectedImages[0]}
-                    handleDelete={handleDelete}
                     handleInputChange={handleInputChange}
                     formatDate={formatDate}
                     handlePathFileChange={handlePathFileChange}

@@ -1,77 +1,57 @@
 import React, { useEffect, useState } from "react";
-
-
-const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, handleInputChange, formatDate, handlePathFileChange, selectedImages }) => {
-
-
-    const [convertedImages, setConvertedImages] = useState({});
-    const [loadingImages, setLoadingImages] = useState({});
+import { Trash, Archive, Share } from 'react-feather';
 
 
 
-    const convertImage = (imagePath) => {
-        if (!convertedImages[imagePath]) {
-            setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
-            window.electron.ipcRenderer.send('convert-fit', imagePath);
-        }
+
+const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChange, formatDate, handlePathFileChange, selectedImages }) => {
+
+
+    const handleDelete = ids => {
+        console.log(ids); // Vérifiez ce que contient ids
+        ids.forEach(id => window.electron.ipcRenderer.send("delete-image", id));
     };
 
-
-    // Convertir les images FITS en WebP
-    useEffect(() => {
-
-        sortedImages().forEach(image => {
-            if ((image.path.endsWith('.fit') || image.path.endsWith('.fits')) && !convertedImages[image.path]) {
-                convertImage(image.path);
-            }
-        });
-
-        const conversionListener = (event, { imagePath, convertedPath }) => {
-            setConvertedImages(prev => ({ ...prev, [imagePath]: convertedPath }));
-            setLoadingImages(prev => ({ ...prev, [imagePath]: false }));
-        };
-
-
-
-        window.electron.ipcRenderer.on('conversion-done', conversionListener);
-
-        return () => {
-            window.electron.ipcRenderer.off('conversion-done', conversionListener);
-        };
-    }, [sortedImages]);
-
-
-
-    // Charger les images FITS
-    const getImageSrc = (image) => {
-        return convertedImages[image.path] || image.path;
-    };
-
-
-
-    const renderImage = (image) => {
-        const isImageLoading = loadingImages[image.path];
-
-        return isImageLoading ? (
-            <div className="skeleton"></div>
-        ) : (
-            <img
-                loading='lazy'
-                onClick={(e) => handleImageClick(image, e)}
-                key={image.id}
-                src={getImageSrc(image)}
-                alt={`Image de ${image.name}`}
-                className={isSelected(image) ? 'focus-image' : ''}
-                style={{ width: 'auto', height: '100px' }}
-            />
-        );
-    };
 
 
     const handleBlink = () => {
         const imagePaths = selectedImages.map(img => img.path);
         window.electron.ipcRenderer.send('start-blink', imagePaths);
     };
+
+
+    const openInFinder = (filePath) => {
+        window.electron.ipcRenderer.send('open-in-finder', filePath);
+    };
+
+
+    useEffect(() => {
+        window.electron.ipcRenderer.on('export-image-success', (event, savePath) => {
+            console.log('Image exportée avec succès:', savePath);
+            // Afficher une notification de succès ou mettre à jour l'interface utilisateur
+        });
+
+        window.electron.ipcRenderer.on('export-image-failure', (event, error) => {
+            console.error('Erreur lors de l\'exportation de l\'image:', error);
+            // Afficher une notification d'erreur ou mettre à jour l'interface utilisateur
+        });
+
+        // Nettoyage
+        return () => {
+            window.electron.ipcRenderer.removeAllListeners('export-image-success');
+            window.electron.ipcRenderer.removeAllListeners('export-image-failure');
+        };
+    }, []);
+
+
+
+    const handleExportClick = (filePath) => {
+        if (filePath) {
+            console.log(filePath);
+            window.electron.ipcRenderer.send('export-image', filePath);
+        }
+    };
+
 
 
     return (
@@ -85,19 +65,75 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
             ) : selectedImages.length === 1 ? (
 
                 <>
-                    <div className='section-details'  >
-                    <h4>Infos</h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }} className='section-details'  >
+
+                        <div style={{ display: 'flex', gap: '8px' }} >
+                            <button
+                                style={{ backgroundColor: '#8532F2' }}
+                                onClick={handleBlink}
+                                className="special inactive"
+                                disabled
+                            >
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <g clip-path="url(#clip0_274_2135)">
+                                        <path d="M6.97066 4.23595C7.274 4.13323 7.274 3.95062 6.97066 3.83649L5.32567 3.22019C5.034 3.11747 4.69567 2.78649 4.579 2.48975L3.949 0.880513C3.844 0.583774 3.65734 0.583774 3.54067 0.880513L2.91067 2.48975C2.80567 2.77508 2.46734 3.10606 2.164 3.22019L0.519004 3.83649C0.215671 3.93921 0.215671 4.12182 0.519004 4.23595L2.164 4.85225C2.45567 4.95497 2.794 5.28595 2.91067 5.58269L3.54067 7.1919C3.64567 7.48864 3.83234 7.48864 3.949 7.1919L4.579 5.58269C4.684 5.29736 5.02234 4.96639 5.32567 4.85225L6.97066 4.23595Z" fill="white" />
+                                        <path d="M14.9858 9.87398C15.9191 9.64572 15.9191 9.26908 14.9858 9.04082L12.9208 8.53865C11.9874 8.31039 11.0308 7.37452 10.7974 6.46148L10.2841 4.44137C10.0508 3.52833 9.66575 3.52833 9.43242 4.44137L8.91909 6.46148C8.68576 7.37452 7.72909 8.31039 6.79576 8.53865L4.73076 9.04082C3.79743 9.26908 3.79743 9.64572 4.73076 9.87398L6.79576 10.3762C7.72909 10.6044 8.68576 11.5403 8.91909 12.4533L9.43242 14.4734C9.66575 15.3865 10.0508 15.3865 10.2841 14.4734L10.7974 12.4533C11.0308 11.5403 11.9874 10.6044 12.9208 10.3762L14.9858 9.87398Z" fill="white" />
+                                    </g>
+                                    <defs>
+                                        <clipPath id="clip0_274_2135">
+                                            <rect width="16" height="15" fill="white" transform="translate(0 0.5)" />
+                                        </clipPath>
+                                    </defs>
+                                </svg>
+
+                                Blink
+                            </button>
+
+
+                            <button onClick={() => openInFinder(selectedImage.path)}
+                                className="special"
+                            >
+                                <Archive
+                                    color="var(--white)"
+                                    size={14} />
+                                Open Source
+                            </button>
+
+
+                            <button onClick={() => selectedImage && handleExportClick(selectedImage.path)}
+                                className="special"
+                            >
+                                <Share
+                                    color="var(--white)"
+                                    size={14} />
+                                Exporter
+                            </button>
+
+
+                        </div>
+
 
                         <button
-                            
-                            onClick={() => handleDelete(selectedImage.id)}
-                            className="secondary"
+                            onClick={() => handleDelete(selectedImages.map(img => img.id))}
+                            className="special"
                         >
-                            Supprimer
+                            <Trash
+                                color="var(--white)"
+                                size={14} />
+                            
                         </button>
 
+
+                    </div>
+
+
+                    <div className='separator'></div>
+
+
+                    <div className='section-details'  >
+
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Nom:</p>
+                            <p>Nom</p>
                             <div style={{ display: 'flex', gap: '4px', alignItems: 'center', width: '70%' }} >
                                 <input
                                     className="input-details"
@@ -107,9 +143,86 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                                     onChange={handleInputChange}
                                     style={{ width: '100%' }}
                                 />
+
+
+
+
                                 <p style={{ width: 'fit-content' }} >.{selectedImage.name.slice(((selectedImage.name.lastIndexOf(".") - 1) >>> 0) + 2)}</p>
                             </div>
 
+                        </div>
+
+
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Résolution</p>
+                            <p>{selectedImage.resolution}</p>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Taille</p>
+                            <p>{selectedImage.size}</p>
+                        </div>
+
+                    </div>
+
+                    <div className='separator'></div>
+
+                    <div className='section-details' >
+                        <h4>Spécifications Techniques</h4>
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%', }}>
+                            <p>Instrument</p>
+                            <input
+                                className="input-details"
+                                name="instrument"
+                                type="text"
+                                value={selectedImage.instrument || ''}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Tube optique</p>
+                            <input
+                                className="input-details"
+                                name="opticalTube"
+                                type="text"
+                                value={selectedImage.opticalTube || ''}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Monture</p>
+                            <input
+                                className="input-details"
+                                name="mount"
+                                type="text"
+                                value={selectedImage.mount || ''}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Caméra</p>
+                            <input
+                                className="input-details"
+                                name="camera"
+                                type="text"
+                                value={selectedImage.camera || ''}
+                                onChange={handleInputChange}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                            <p>Exposition</p>
+                            <input
+                                className="input-details"
+                                name="exposition"
+                                type="text"
+                                value={selectedImage.exposition || ''}
+                                onChange={handleInputChange}
+                            />
                         </div>
                     </div>
 
@@ -120,7 +233,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                     <div className='section-details'  >
                         <h4>Détails Observation</h4>
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Objet:</p>
+                            <p>Objet</p>
                             <input
                                 className="input-details"
                                 name="skyObject"
@@ -132,7 +245,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Objet Type:</p>
+                            <p>Objet Type</p>
                             <select
                                 className="input-details"
                                 name="objectType"
@@ -160,7 +273,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Constellation:</p>
+                            <p>Constellation</p>
                             <input
                                 className="input-details"
                                 name="constellation"
@@ -171,7 +284,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>AD:</p>
+                            <p>AD</p>
                             <input
                                 className="input-details"
                                 name="AD"
@@ -182,7 +295,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>DEC:</p>
+                            <p>DEC</p>
                             <input
                                 className="input-details"
                                 name="DEC"
@@ -193,7 +306,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Date:</p>
+                            <p>Date</p>
                             <input
                                 className="input-details"
                                 name="date"
@@ -204,7 +317,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Lieu:</p>
+                            <p>Lieu</p>
                             <input
                                 className="input-details"
                                 name="location"
@@ -215,7 +328,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                         </div>
 
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Note:</p>
+                            <p>Note</p>
                             <textarea
                                 style={{ height: '50px' }}
                                 className="input-details"
@@ -230,10 +343,13 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
 
                     <div className='separator'></div>
 
+
+
+
                     <div className='section-details' >
                         <h4>Caractéristiques</h4>
                         <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Type de photo:</p>
+                            <p>Type de photo</p>
 
                             <select
                                 className="input-details"
@@ -372,78 +488,9 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Résolution:</p>
-                            <p>{selectedImage.resolution}</p>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Taille:</p>
-                            <p>{selectedImage.size}</p>
-                        </div>
-
                     </div>
 
-                    <div className='separator'></div>
 
-
-                    <div className='section-details' >
-                        <h4>Spécifications Techniques</h4>
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%', }}>
-                            <p>Instrument:</p>
-                            <input
-                                className="input-details"
-                                name="instrument"
-                                type="text"
-                                value={selectedImage.instrument || ''}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Tube optique:</p>
-                            <input
-                                className="input-details"
-                                name="opticalTube"
-                                type="text"
-                                value={selectedImage.opticalTube || ''}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Monture:</p>
-                            <input
-                                className="input-details"
-                                name="mount"
-                                type="text"
-                                value={selectedImage.mount || ''}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Caméra:</p>
-                            <input
-                                className="input-details"
-                                name="camera"
-                                type="text"
-                                value={selectedImage.camera || ''}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                            <p>Exposition:</p>
-                            <input
-                                className="input-details"
-                                name="exposition"
-                                type="text"
-                                value={selectedImage.exposition || ''}
-                                onChange={handleInputChange}
-                            />
-                        </div>
-                    </div>
 
                 </>
 
@@ -451,30 +498,125 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                 <>
                     <>
                         <div>
-                            <div className='section-details' >
-                                <h4>Multiple selection</h4>
-                                <div style={{display:'flex', gap:'8px'}} >
-                                    <button
 
-                                       
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }} className='section-details'  >
+
+                                <div style={{ display: 'flex', gap: '8px' }} >
+                                    <button
+                                        style={{ backgroundColor: '#8532F2' }}
                                         onClick={handleBlink}
-                                        className="primary"
+                                        className="special"
+
                                     >
+                                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <g clip-path="url(#clip0_274_2135)">
+                                                <path d="M6.97066 4.23595C7.274 4.13323 7.274 3.95062 6.97066 3.83649L5.32567 3.22019C5.034 3.11747 4.69567 2.78649 4.579 2.48975L3.949 0.880513C3.844 0.583774 3.65734 0.583774 3.54067 0.880513L2.91067 2.48975C2.80567 2.77508 2.46734 3.10606 2.164 3.22019L0.519004 3.83649C0.215671 3.93921 0.215671 4.12182 0.519004 4.23595L2.164 4.85225C2.45567 4.95497 2.794 5.28595 2.91067 5.58269L3.54067 7.1919C3.64567 7.48864 3.83234 7.48864 3.949 7.1919L4.579 5.58269C4.684 5.29736 5.02234 4.96639 5.32567 4.85225L6.97066 4.23595Z" fill="white" />
+                                                <path d="M14.9858 9.87398C15.9191 9.64572 15.9191 9.26908 14.9858 9.04082L12.9208 8.53865C11.9874 8.31039 11.0308 7.37452 10.7974 6.46148L10.2841 4.44137C10.0508 3.52833 9.66575 3.52833 9.43242 4.44137L8.91909 6.46148C8.68576 7.37452 7.72909 8.31039 6.79576 8.53865L4.73076 9.04082C3.79743 9.26908 3.79743 9.64572 4.73076 9.87398L6.79576 10.3762C7.72909 10.6044 8.68576 11.5403 8.91909 12.4533L9.43242 14.4734C9.66575 15.3865 10.0508 15.3865 10.2841 14.4734L10.7974 12.4533C11.0308 11.5403 11.9874 10.6044 12.9208 10.3762L14.9858 9.87398Z" fill="white" />
+                                            </g>
+                                            <defs>
+                                                <clipPath id="clip0_274_2135">
+                                                    <rect width="16" height="15" fill="white" transform="translate(0 0.5)" />
+                                                </clipPath>
+                                            </defs>
+                                        </svg>
+
                                         Blink
                                     </button>
 
-                                    <button
-                          
-                                        onClick={() => handleDelete(selectedImages[0].id)}
-                                        className="secondary"
+
+                                    <button onClick={() => openInFinder(selectedImage.path)}
+                                        className="special inactive"
+                                        disabled
                                     >
-                                        Supprimer
+                                        <Archive
+                                            color="var(--white)"
+                                            size={16} />
                                     </button>
 
                                 </div>
 
 
+                                <button
+                                    onClick={() => handleDelete(selectedImages.map(img => img.id))}
+                                    className="special"
+                                >
+                                    <Trash
+                                        color="var(--white)"
+                                        size={16} />
+                                </button>
+
+
                             </div>
+
+
+                            <div className='separator'></div>
+
+
+                            <div className='section-details' >
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+
+                                    <p>Sélection multiple</p>
+
+                                </div>
+                            </div>
+
+                            <div className='separator'></div>
+
+
+                            <div className='section-details' >
+                                <h4>Spécifications Techniques</h4>
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                                    <p>Instrument:</p>
+                                    <input
+                                        className="input-details"
+                                        name="instrument"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                                    <p>Tube optique:</p>
+                                    <input
+                                        className="input-details"
+                                        name="opticalTube"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                                    <p>Monture:</p>
+                                    <input
+                                        className="input-details"
+                                        name="mount"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                                    <p>Caméra:</p>
+                                    <input
+                                        className="input-details"
+                                        name="camera"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
+                                    <p>Exposition:</p>
+                                    <input
+                                        className="input-details"
+                                        name="exposition"
+                                        type="text"
+                                        onChange={handleInputChange}
+                                    />
+                                </div>
+                            </div>
+
 
                             <div className='separator'></div>
 
@@ -617,61 +759,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleDelete, h
                                 </div>
                             </div>
 
-                            <div className='separator'></div>
 
-
-                            <div className='section-details' >
-                                <h4>Spécifications Techniques</h4>
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                                    <p>Instrument:</p>
-                                    <input
-                                        className="input-details"
-                                        name="instrument"
-                                        type="text"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                                    <p>Tube optique:</p>
-                                    <input
-                                        className="input-details"
-                                        name="opticalTube"
-                                        type="text"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                                    <p>Monture:</p>
-                                    <input
-                                        className="input-details"
-                                        name="mount"
-                                        type="text"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                                    <p>Caméra:</p>
-                                    <input
-                                        className="input-details"
-                                        name="camera"
-                                        type="text"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-
-                                <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
-                                    <p>Exposition:</p>
-                                    <input
-                                        className="input-details"
-                                        name="exposition"
-                                        type="text"
-                                        onChange={handleInputChange}
-                                    />
-                                </div>
-                            </div>
                         </div>
                     </>
                 </>

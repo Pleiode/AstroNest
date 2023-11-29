@@ -3,12 +3,23 @@ import { format, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 
-const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, handleImageDoubleClick, formatDate }) => {
+const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate }) => {
 
 
     const [convertedImages, setConvertedImages] = useState({});
     const [loadingImages, setLoadingImages] = useState({});
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [showNotification, setShowNotification] = useState(false);
 
+    const [scale, setScale] = useState(1);
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+    const [imageLimit, setImageLimit] = useState(100); // Limite initiale de 50 images
+
+
+    const minScale = 0.5; // Valeur minimale de zoom
+    const maxScale = 10;   // Valeur maximale de zoom
 
 
     const convertImage = (imagePath) => {
@@ -18,29 +29,45 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
         }
     };
 
+    // Fonction pour charger plus d'images
+    const loadMoreImages = () => {
+        setImageLimit(prevLimit => prevLimit + 50); // Augmente la limite de 50
+    };
 
-    // Convertir les images FITS en WebP
+    // Modifier la logique de rendu pour afficher un nombre limité d'images
+    const limitedSortedImages = () => {
+        const allImages = sortedImages();
+        return allImages.slice(0, imageLimit); // Affiche uniquement un nombre limité d'images
+    };
+
+
+
     useEffect(() => {
+        // Obtenez les images limitées
+        const limitedImages = limitedSortedImages();
 
-        sortedImages().forEach(image => {
-            if ((image.path.endsWith('.fit') || image.path.endsWith('.fits')) && !convertedImages[image.path]) {
+        limitedImages.forEach(image => {
+            if (image.convertPath) {
+                // Utilisez convertPath si disponible
+                setConvertedImages(prev => ({ ...prev, [image.path]: image.convertPath }));
+            } else if ((image.path.endsWith('.fit') || image.path.endsWith('.fits')) && !convertedImages[image.path]) {
+                // Déclenchez la conversion si nécessaire, mais seulement pour les images limitées
                 convertImage(image.path);
             }
         });
 
         const conversionListener = (event, { imagePath, convertedPath }) => {
+            console.log("Conversion terminée:", imagePath, convertedPath);
             setConvertedImages(prev => ({ ...prev, [imagePath]: convertedPath }));
-            setLoadingImages(prev => ({ ...prev, [imagePath]: false }));
+            setLoadingImages(prev => ({ ...prev, [imagePath]: false })); // Mettre à jour l'état de chargement
         };
-
-
 
         window.electron.ipcRenderer.on('conversion-done', conversionListener);
 
         return () => {
             window.electron.ipcRenderer.off('conversion-done', conversionListener);
         };
-    }, [sortedImages]);
+    }, [sortedImages, imageLimit]); // Ajoutez imageLimit comme dépendance
 
 
 
@@ -48,27 +75,6 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     const getImageSrc = (image) => {
         return convertedImages[image.path] || image.path;
     };
-
-
-
-    const renderImage = (image) => {
-        const isImageLoading = loadingImages[image.path];
-
-        return isImageLoading ? (
-            <div className="skeleton"></div>
-        ) : (
-            <img
-                loading='lazy'
-                onClick={(e) => handleImageClick(image, e)}
-                key={image.id}
-                src={getImageSrc(image)}
-                alt={`Image de ${image.name}`}
-                className={isSelected(image) ? 'focus-image' : ''}
-                style={{ width: 'auto', height: '100px' }}
-            />
-        );
-    };
-
 
     const DateEnLettres = ({ dateKey }) => {
         if (!dateKey) {
@@ -83,12 +89,112 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     };
 
 
- 
+
+    const handleImageDoubleClick = (image) => {
+        if (image.path.endsWith('.fit') || image.path.endsWith('.fits')) {
+            window.electron.ipcRenderer.send('open-fit-file', image.path);
+            setShowNotification(true);  // Activer la notification
+            setTimeout(() => setShowNotification(false), 3000);  // Désactiver après 3 secondes
+
+            console.log(image.path)
+        } else {
+            setSelectedImage(image);
+        }
+    };
+
+
+    const notificationStyle = {
+        position: 'fixed',
+        bottom: '20px',
+        left: '20px',
+        backgroundColor: 'var(--bg-color)',
+        padding: '10px',
+        borderRadius: '5px',
+        boxShadow: '0 0 5px rgba(0, 0, 0, 0.2)'
+    };
+
+
+    const renderImage = (image) => {
+        const isImageLoading = loadingImages[image.path];
+
+
+        return isImageLoading ? (
+            <div className="skeleton"></div>
+        ) : (
+            <img
+                loading='lazy'
+                onClick={(e) => handleImageClick(image, e)}
+                onDoubleClick={() => handleImageDoubleClick(image)}
+                key={image.id}
+                src={getImageSrc(image)}
+                alt={`Image de ${image.name}`}
+                className={isSelected(image) ? 'focus-image' : ''}
+                style={{ width: 'auto', height: '100px' }}
+            />
+        );
+    };
+
+
+
+
+    const handleWheel = (e) => {
+        const zoomFactor = 0.1;
+        let newScale = scale;
+
+        if (e.deltaY < 0) {
+            newScale = Math.min(scale + zoomFactor, maxScale); // Zoom in
+        } else {
+            newScale = Math.max(scale - zoomFactor, minScale); // Zoom out
+        }
+
+        setScale(newScale);
+    };
+
+    const handleMouseDown = (e) => {
+        e.preventDefault();
+        setStartPos({ x: e.clientX - position.x, y: e.clientY - position.y });
+        setIsDragging(true);
+    };
+
+    const handleMouseMove = (e) => {
+        if (isDragging) {
+            const newX = e.clientX - startPos.x;
+            const newY = e.clientY - startPos.y;
+            setPosition({ x: newX, y: newY });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+    };
+
+    const containerRef = useRef(null); // Référence au conteneur
+
+    const handleScroll = () => {
+        const container = containerRef.current;
+        if (container) {
+            // Vérifier si l'utilisateur a atteint le bas du conteneur
+            if (container.scrollHeight - container.scrollTop === container.clientHeight) {
+                console.log("At bottom of container");
+                loadMoreImages();
+            }
+        }
+    };
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+            return () => container.removeEventListener('scroll', handleScroll);
+        }
+    }, [imageLimit]); // Ajoutez les dépendances nécessaires
+
+
 
     return (
-        <div className="container" >
+        <div className="container" ref={containerRef}>
             {viewMode === 'grid' ? (
-                Object.entries(groupBy(sortedImages(), getGroupKey)).map(([key, imgs]) => (
+                Object.entries(groupBy(limitedSortedImages(), getGroupKey)).map(([key, imgs]) => (
                     <div key={key}>
 
                         <DateEnLettres dateKey={key} />
@@ -120,7 +226,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                         </tr>
                     </thead>
                     <tbody>
-                        {sortedImages().map(image => (
+                        {limitedSortedImages().map(image => (
                             <tr onClick={(e) => handleImageClick(image, e)}
                                 key={image.id}
                             >
@@ -130,7 +236,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                                         key={image.id}
                                         src={getImageSrc(image)}
                                         alt={image.name}
-                                        style={{ height: "100px", width: 'auto' }}
+                                        style={{ height: "30px", width: 'auto' }}
                                     />
 
                                 </td>
@@ -144,6 +250,43 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                         ))}
                     </tbody>
                 </table>
+            )}
+
+
+
+            {selectedImage && (
+                <div
+                    className="fullscreen-image-container"
+
+                    onMouseMove={handleMouseMove}
+                    onMouseUp={handleMouseUp}
+                >
+                    <img
+                        src={getImageSrc(selectedImage)}
+                        alt={`Image agrandie`}
+                        className="fullscreen-image"
+                        onWheel={handleWheel}
+                        onMouseDown={handleMouseDown}
+                        style={{
+                            transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
+                            cursor: isDragging ? 'grabbing' : 'grab',
+                            transition: 'none'  // Supprime l'effet de lissage
+                        }}
+                    />
+                </div>
+            )}
+
+            {showNotification && (
+                <div style={notificationStyle}>
+                    <p>Ouverture de l'image .fit dans une fenêtre séparée.</p>
+                </div>
+            )}
+
+
+            {imageLimit < sortedImages().length && (
+                <div style={{ height: '20px'}}>
+                    <p>Chargement...</p>
+                </div>
             )}
         </div>
     );

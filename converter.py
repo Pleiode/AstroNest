@@ -10,15 +10,26 @@ from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 
 output_directory = os.getenv('APP_ROOT_PATH', os.path.join(os.path.dirname(__file__), 'cache-images'))
-semaphore = asyncio.Semaphore(2)  # Limite de 10 tâches simultanées
+semaphore = asyncio.Semaphore(10)  # Limite de 10 tâches simultanées
 
 async def normalize_data(data, loop):
     def normalize_sync(data):
-        data_min = data.min()
-        data_max = data.max()
-        return ((data - data_min) / (data_max - data_min) * 255).astype(np.uint8)
+        # Tronquer les valeurs extrêmes pour éviter la domination des valeurs aberrantes
+        percentile_low, percentile_high = np.percentile(data, [2, 98])
+        data_clipped = np.clip(data, percentile_low, percentile_high)
+
+        # Normalisation après le tronquage
+        data_min = data_clipped.min()
+        data_max = data_clipped.max()
+        return ((data_clipped - data_min) / (data_max - data_min) * 255).astype(np.uint8)
 
     return await loop.run_in_executor(None, normalize_sync, data)
+
+
+def adjust_contrast_bias(data, contrast=1.0, bias=0.0):
+    # Ajuster le contraste et le biais
+    return np.clip(255 * contrast * (data / 255 - 0.5) + 0.5 + bias, 0, 255).astype(np.uint8)
+
 
 async def convert_fits_to_webp(input_path, output_directory, max_size=200, loop=None):
     async with semaphore:
@@ -45,7 +56,13 @@ async def convert_fits_to_webp(input_path, output_directory, max_size=200, loop=
 
         normalized_data = await normalize_data(data, loop)
 
-        image = Image.fromarray(normalized_data, 'L')
+        # Ajustez ces valeurs selon vos besoins
+        contrast_value = 1.0  # Valeur par défaut pour le contraste
+        bias_value = 0.0       # Valeur par défaut pour le biais
+
+        adjusted_data = adjust_contrast_bias(normalized_data, contrast=contrast_value, bias=bias_value)
+
+        image = Image.fromarray(adjusted_data, 'L')
         width, height = image.size
         scale = min(max_size / height, max_size / width)
         if scale < 1:

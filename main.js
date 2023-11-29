@@ -1,27 +1,29 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, remote, dialog } = electron;
+const { app, BrowserWindow, ipcMain, remote, dialog, shell } = electron;
 
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
-
-
 const { exec, spawn } = require('child_process');
+const sharp = require('sharp');
+
+const https = require('https');
+
+const packageJson = require('./package.json'); // Ajustez le chemin vers votre package.json
 
 // Obtient le chemin du dossier de données de l'utilisateur
 const userDataPath = electron.app.getPath('userData');
 
 // Définit le chemin complet de votre base de données
-let dbPath;
 
-if (process.env.NODE_ENV === 'development') {
-    // En mode développement
-    dbPath = path.join(__dirname, 'Database.db');
-} else {
-    // En mode production
-    dbPath = path.join(process.resourcesPath, 'Database.db');
-}
+
+
+const userDocumentsPath = app.getPath('documents');
+
+// Construit le chemin complet de la base de données dans ce dossier
+const dbPath = path.join(userDocumentsPath, 'Database-Meridio.db');
+
 
 
 console.log("Database path:", dbPath);
@@ -74,7 +76,7 @@ function createWindow() {
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
 
-
+    checkForUpdates();
     // Crée la base de données lors du lancement de l'application
     createDatabase();
 
@@ -207,6 +209,7 @@ function createDatabase() {
     db.run(`CREATE TABLE IF NOT EXISTS images(
         id INTEGER PRIMARY KEY,
         name TEXT,
+        convertPath TEXT,
         path TEXT,
         skyObject TEXT,
         objectType TEXT,
@@ -354,11 +357,7 @@ ipcMain.on('export-db-to-json', (event) => {
 });
 
 
-
-
 process.env.APP_ROOT_PATH = path.join(__dirname, '..');
-
-
 
 
 ipcMain.on('convert-fit', (event, imagePath) => {
@@ -366,25 +365,35 @@ ipcMain.on('convert-fit', (event, imagePath) => {
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, './converter', scriptName);
-    
+
 
     exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Erreur de conversion: ${error}`);
-            event.reply('conversion-error', error.message); // Envoyer l'erreur au frontend
+            event.reply('conversion-error', error.message);
             return;
         }
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
 
-        event.reply('conversion-done', { imagePath: imagePath, convertedPath: stdout.trim() });
+        const convertedPath = stdout.trim();
+        console.log(`Conversion réussie : ${convertedPath}`);
+
+        // Mise à jour de la base de données avec le chemin de l'image convertie
+        db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [convertedPath, imagePath], function (err) {
+            if (err) {
+                // Vous pouvez choisir de notifier l'interface utilisateur de cette erreur
+                return;
+            }
+
+            // Répondre au frontend que la conversion est terminée et que la DB est mise à jour
+            event.reply('conversion-done', { imagePath: imagePath, convertedPath: convertedPath });
+        });
     });
 });
 
 
 
 ipcMain.on('start-blink', (event, imagePaths) => {
-    const scriptPath = getPythonScriptPath('blink');
+    const scriptPath = "blink.py";
 
     const pythonProcess = spawn('python3', [scriptPath, ...imagePaths]);
 
@@ -401,4 +410,139 @@ ipcMain.on('start-blink', (event, imagePaths) => {
     });
 });
 
+
+
+
+
+function checkForUpdates() {
+    console.log("Début de la vérification des mises à jour...");
+
+    const options = {
+        hostname: 'api.github.com',
+        path: '/repos/Pleiode/Meridio/releases/latest',
+        method: 'GET',
+        headers: { 'User-Agent': 'Meridio' }
+    };
+
+    https.get(options, (res) => {
+        console.log("Réponse reçue de l'API GitHub.");
+
+        console.log(`Statut de la réponse HTTP: ${res.statusCode}`);
+
+        let data = '';
+
+        res.on('data', (chunk) => {
+            data += chunk;
+            console.log("Réception des données...");
+        });
+
+        res.on('end', () => {
+            console.log("Fin de la réception des données.");
+            console.log("Données brutes reçues:", data);
+
+            try {
+                const releaseInfo = JSON.parse(data);
+                console.log("Informations de la release analysées:", releaseInfo);
+
+
+                if (releaseInfo.assets && releaseInfo.assets.length > 0) {
+                    const latestVersion = releaseInfo.tag_name;
+                    const downloadUrl = releaseInfo.assets[0].browser_download_url;
+
+                    console.log("Dernière version:", latestVersion);
+                    console.log("URL de téléchargement:", downloadUrl);
+
+                    if (latestVersion !== packageJson.version) {
+                        console.log("Mise à jour disponible.");
+                        dialog.showMessageBox({
+                            type: 'info',
+                            title: 'Mise à jour disponible',
+                            message: 'Une nouvelle version de l’application est disponible. Voulez-vous la télécharger et l’installer maintenant ?',
+                            buttons: ['Oui', 'Plus tard']
+                        }).then(result => {
+                            if (result.response === 0) {
+                                console.log("L'utilisateur a choisi de télécharger la mise à jour.");
+                                require('electron').shell.openExternal(downloadUrl);
+                            } else {
+                                console.log("L'utilisateur a choisi de reporter la mise à jour.");
+                            }
+                        });
+                    } else {
+                        console.log("L'application est à jour.");
+                    }
+                } else {
+                    console.log('Aucun asset trouvé pour la dernière version.');
+                }
+            } catch (e) {
+                console.error("Erreur lors de l'analyse des données de l'API GitHub:", e);
+            }
+        });
+    }).on('error', (e) => {
+        console.error("Erreur lors de la requête à l'API GitHub:", e);
+    });
+}
+
+
+// Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
+ipcMain.on('open-fit-file', (event, imagePath) => {
+    exec(`python3 open_image.py "${imagePath}"`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors de l'exécution du script Python : ${error}`);
+            return;
+        }
+        console.log(`Résultat : ${stdout}`);
+    });
+});
+
+
+// Gestionnaire d'événements pour l'événement "open-in-finder" envoyé depuis le processus de rendu
+ipcMain.on('open-in-finder', (event, filePath) => {
+
+    shell.showItemInFolder(filePath);
+});
+
+
+
+
+ipcMain.on('export-image', async (event, filePath) => {
+    console.log("Reçu export-image", filePath);
+
+    try {
+        const { filePath: savePath } = await dialog.showSaveDialog({
+            title: 'Exporter l\'image',
+            defaultPath: path.basename(filePath, path.extname(filePath)) + '.jpeg',
+            filters: [{ name: 'Images', extensions: ['jpeg'] }]
+        });
+
+        if (!savePath) {
+            event.reply('export-image-cancelled');
+            return;
+        }
+
+        const pythonCommand = `python3 export-convert.py "${filePath}" "${savePath}"`;
+
+
+        
+        exec(pythonCommand, (error, stdout, stderr) => {
+            if (error || stderr) {
+                console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
+                dialog.showErrorBox('Erreur d\'exportation', 'Une erreur est survenue lors de l\'exportation de l\'image.');
+                event.reply('export-image-failure', error ? error.message : stderr);
+                return;
+            }
+
+            console.log('Image convertie avec succès:', stdout);
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'Exportation réussie',
+                message: 'L\'image a été exportée avec succès.',
+            });
+            event.reply('export-image-success', savePath);
+        });
+    } catch (error) {
+        console.error('Erreur lors de l\'ouverture du dialogue de sauvegarde:', error);
+        dialog.showErrorBox('Erreur de dialogue', 'Une erreur est survenue lors de l\'ouverture du dialogue de sauvegarde.');
+        event.reply('export-image-failure', error.message);
+    }
+});
 

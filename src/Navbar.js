@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from 'react-router-dom';
-import { Image as ImageIcon, Trash as TrashIcon, Download } from 'react-feather';
+import { Image as ImageIcon, Trash as TrashIcon, Download, Upload } from 'react-feather';
 
 
 
@@ -25,8 +25,6 @@ function Navbar() {
 
   return (
     <nav className="navbar">
-
-
       <div>
         <ul className="navbar-links">
           <li>
@@ -35,12 +33,14 @@ function Navbar() {
               Photo Library
             </Link>
           </li>
+
+          {/*
           <li>
             <Link to="/trash" className={`nav-link ${pathname === "/trash" ? 'active' : ''}`}>
               <TrashIcon className='navbar-icon' />
               Corbeille
             </Link>
-          </li>
+  </li> */}
         </ul>
 
       </div>
@@ -48,7 +48,7 @@ function Navbar() {
       <div>
 
         <button className="btn-export" onClick={exportDatabase}>
-          <Download strokeWidth={2} width={'16px'} />
+          <Upload strokeWidth={2} width={'16px'} />
           Exporter JSON
         </button>
       </div>
