@@ -74,7 +74,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 className="special inactive"
                                 disabled
                             >
-                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <g clip-path="url(#clip0_274_2135)">
                                         <path d="M6.97066 4.23595C7.274 4.13323 7.274 3.95062 6.97066 3.83649L5.32567 3.22019C5.034 3.11747 4.69567 2.78649 4.579 2.48975L3.949 0.880513C3.844 0.583774 3.65734 0.583774 3.54067 0.880513L2.91067 2.48975C2.80567 2.77508 2.46734 3.10606 2.164 3.22019L0.519004 3.83649C0.215671 3.93921 0.215671 4.12182 0.519004 4.23595L2.164 4.85225C2.45567 4.95497 2.794 5.28595 2.91067 5.58269L3.54067 7.1919C3.64567 7.48864 3.83234 7.48864 3.949 7.1919L4.579 5.58269C4.684 5.29736 5.02234 4.96639 5.32567 4.85225L6.97066 4.23595Z" fill="white" />
                                         <path d="M14.9858 9.87398C15.9191 9.64572 15.9191 9.26908 14.9858 9.04082L12.9208 8.53865C11.9874 8.31039 11.0308 7.37452 10.7974 6.46148L10.2841 4.44137C10.0508 3.52833 9.66575 3.52833 9.43242 4.44137L8.91909 6.46148C8.68576 7.37452 7.72909 8.31039 6.79576 8.53865L4.73076 9.04082C3.79743 9.26908 3.79743 9.64572 4.73076 9.87398L6.79576 10.3762C7.72909 10.6044 8.68576 11.5403 8.91909 12.4533L9.43242 14.4734C9.66575 15.3865 10.0508 15.3865 10.2841 14.4734L10.7974 12.4533C11.0308 11.5403 11.9874 10.6044 12.9208 10.3762L14.9858 9.87398Z" fill="white" />
@@ -96,7 +96,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 <Archive
                                     color="var(--white)"
                                     size={14} />
-                                Open Source
+
                             </button>
 
 
@@ -106,7 +106,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 <Share
                                     color="var(--white)"
                                     size={14} />
-                                Exporter
+
                             </button>
 
 
@@ -120,7 +120,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                             <Trash
                                 color="var(--white)"
                                 size={14} />
-                            
+
                         </button>
 
 
@@ -531,8 +531,21 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                     >
                                         <Archive
                                             color="var(--white)"
-                                            size={16} />
+                                            size={14} />
                                     </button>
+
+
+
+                                    <button onClick={() => selectedImage && handleExportClick(selectedImage.path)}
+                                        className="special inactive"
+                                        disabled
+                                    >
+                                        <Share
+                                            color="var(--white)"
+                                            size={14} />
+
+                                    </button>
+
 
                                 </div>
 
@@ -543,7 +556,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 >
                                     <Trash
                                         color="var(--white)"
-                                        size={16} />
+                                        size={14} />
                                 </button>
 
 

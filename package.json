@@ -1,7 +1,7 @@
 {
   "name": "meridio",
   "version": "1.0.0",
-  "description": "",
+  "description": "Une brève description de votre application",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,7 +10,8 @@
     "webpack:watch": "webpack --watch",
     "start:dev": "webpack-dev-server --mode development",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win"
   },
   "build": {
     "directories": {
@@ -20,6 +21,7 @@
     "mac": {
       "target": "dmg"
     },
+    "defaultArch": "x64",
     "win": {
       "target": "nsis"
     },
@@ -61,7 +63,7 @@
     "react-selecto": "^1.26.1",
     "react-table": "^7.8.0",
     "react-transition-group": "^4.4.5",
-    "sharp": "^0.32.6",
+    "sharp": "^0.33.0",
     "sqlite3": "^5.1.6",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
@@ -77,6 +79,7 @@
     "css-loader": "^6.8.1",
     "electron": "^26.0.0",
     "electron-builder": "^24.6.4",
+    "electron-rebuild": "^3.2.9",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "style-loader": "^3.3.3",
     "webpack": "^5.88.2",

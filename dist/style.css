@@ -80,6 +80,51 @@ h4 {
     box-sizing: border-box;
 }
 
+
+.login-window {
+    display: flex;
+    background-color: var(--color-nav);
+    -webkit-app-region: drag;
+}
+
+.login-background {
+    width: 100%;
+    height: 100vh;
+    background-image: url('./image/login.webp');
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+
+
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    padding-inline: 10%;
+    gap: 8px;
+    width: 70%;
+}
+
+
+
+.login-form form input {
+    height: 38px;
+    -webkit-app-region: no-drag;
+}
+
+
+.login-form button {
+    height: 38px;
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    display: block;
+    -webkit-app-region: no-drag;
+    margin-top: 24px;
+}
+
+
 /* Header within the navbar with padding and border */
 header {
     display: flex;
@@ -106,9 +151,14 @@ button {
     transition: 0.2s;
     border-radius: 6px;
     font-size: 14px;
-  
+
     color: var(--white);
 }
+
+a {
+    color: var(--white);
+    -webkit-app-region: no-drag;
+} 
 
 button.primary {
     border: 1px solid #5250E1;
@@ -818,4 +868,14 @@ ul {
     cursor: grab;
     transition: transform 0.25s ease;
     transform-origin: center;
+}
+
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background: url('path_to_your_background_image.jpg') center no-repeat;
+    background-size: cover;
 }

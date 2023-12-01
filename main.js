@@ -1,25 +1,20 @@
 const electron = require('electron');
-const { app, BrowserWindow, ipcMain, remote, dialog, shell } = electron;
-
+const { app, BrowserWindow, ipcMain, dialog, shell } = electron;
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
 const { exec, spawn } = require('child_process');
 const sharp = require('sharp');
-
 const https = require('https');
+const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
 
-const packageJson = require('./package.json'); // Ajustez le chemin vers votre package.json
-
-// Obtient le chemin du dossier de données de l'utilisateur
-const userDataPath = electron.app.getPath('userData');
-
-// Définit le chemin complet de votre base de données
-
-
-
+// Obtient les chemins du dossier de données de l'utilisateur et des documents
+const userDataPath = app.getPath('userData');
 const userDocumentsPath = app.getPath('documents');
+
+// [Autres parties du code...]
+
 
 // Construit le chemin complet de la base de données dans ce dossier
 const dbPath = path.join(userDocumentsPath, 'Database-Meridio.db');
@@ -60,8 +55,8 @@ if (process.env.NODE_ENV === 'production') {
 function createWindow() {
     // Crée une nouvelle fenêtre du navigateur Electron
     win = new BrowserWindow({
-        width: 1200,
-        height: 800,
+        width: 1000,
+        height: 650,
         minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
         titleBarStyle: 'hidden',
@@ -522,7 +517,7 @@ ipcMain.on('export-image', async (event, filePath) => {
         const pythonCommand = `python3 export-convert.py "${filePath}" "${savePath}"`;
 
 
-        
+
         exec(pythonCommand, (error, stdout, stderr) => {
             if (error || stderr) {
                 console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
@@ -546,3 +541,26 @@ ipcMain.on('export-image', async (event, filePath) => {
     }
 });
 
+
+
+ipcMain.on('resize-window', (event, targetWidth, targetHeight) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (win) {
+        let width = win.getBounds().width;
+        let height = win.getBounds().height;
+
+        const widthIncrement = (targetWidth - width) / 20; // 20 est le nombre d'étapes pour l'animation
+        const heightIncrement = (targetHeight - height) / 20;
+
+        const interval = setInterval(() => {
+            width += widthIncrement;
+            height += heightIncrement;
+
+            win.setSize(Math.round(width), Math.round(height));
+
+            if (Math.round(width) === targetWidth && Math.round(height) === targetHeight) {
+                clearInterval(interval);
+            }
+        }, 10); // 20 ms pour chaque étape de l'animation
+    }
+});
