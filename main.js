@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
 const { exec, spawn } = require('child_process');
-const sharp = require('sharp');
+
 const https = require('https');
 const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
 
@@ -356,10 +356,14 @@ process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 
 ipcMain.on('convert-fit', (event, imagePath) => {
-    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
+
+    const isWindows = process.platform === 'win32';
+    const scriptExtension = isWindows ? '.exe' : '';
+    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : `converter${scriptExtension}`;
+
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './converter', scriptName);
+        : path.join(process.resourcesPath, 'converter', scriptName);
 
 
     exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {

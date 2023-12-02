@@ -21,10 +21,6 @@
     "mac": {
       "target": "dmg"
     },
-    "defaultArch": "x64",
-    "win": {
-      "target": "nsis"
-    },
     "extraResources": [
       {
         "from": "./converter",
@@ -63,7 +59,6 @@
     "react-selecto": "^1.26.1",
     "react-table": "^7.8.0",
     "react-transition-group": "^4.4.5",
-    "sharp": "^0.33.0",
     "sqlite3": "^5.1.6",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
