@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
 const { exec, spawn } = require('child_process');
+const os = require('os');
 
 const https = require('https');
 const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
@@ -30,6 +31,8 @@ let db;
 // Définissez le chemin du fichier de journalisation
 const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userData est un répertoire approprié pour stocker des données d'application
 
+console.log("Log file path:", logFilePath);
+
 // Redirigez la sortie de la console vers le fichier de journalisation
 const logStream = fs.createWriteStream(logFilePath, { flags: 'a' });
 console.log = (message) => {
@@ -42,6 +45,7 @@ console.error = (message) => {
 };
 
 
+// Désactivez les outils de développement pour la version de production
 if (process.env.NODE_ENV === 'production') {
     if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ === 'object') {
         for (let [key, value] of Object.entries(window.__REACT_DEVTOOLS_GLOBAL_HOOK__)) {
@@ -53,20 +57,31 @@ if (process.env.NODE_ENV === 'production') {
 
 
 function createWindow() {
+    // Détermine si l'application s'exécute sur Windows
+    const isWindows = os.platform() === 'win32';
+
     // Crée une nouvelle fenêtre du navigateur Electron
-    win = new BrowserWindow({
+    let windowOptions = {
         width: 1000,
         height: 650,
         minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
-        titleBarStyle: 'hidden',
-        titleBarOverlay: true,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true, // Protège contre les attaques XSS
             preload: path.join(__dirname, 'preload.js') // Utilise un script de préchargement
-        },
-    });
+        }
+    };
+
+    // Ajuste le style de la barre de titre pour Windows
+    if (isWindows) {
+        windowOptions.frame = true; // Utilise la barre de titre native de Windows
+    } else {
+        windowOptions.titleBarStyle = 'hidden';
+        windowOptions.titleBarOverlay = true;
+    }
+
+    let win = new BrowserWindow(windowOptions);
 
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
@@ -74,117 +89,98 @@ function createWindow() {
     checkForUpdates();
     // Crée la base de données lors du lancement de l'application
     createDatabase();
-
-    // Gestionnaires d'événements pour les actions de fenêtre (minimiser, maximiser, fermer)
-    ipcMain.on('minimize-window', () => {
-        if (win) {
-            win.minimize();
-        }
-    });
-
-    ipcMain.on('maximize-window', () => {
-        if (win) {
-            if (win.isMaximized()) {
-                win.restore();
-            } else {
-                win.maximize();
-            }
-        }
-    });
-
-    ipcMain.on('close-window', () => {
-        if (win) {
-            win.close();
-        }
-    });
-
-
-    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
-    // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
-    ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
-        // Destructuration de l'objet pour extraire les propriétés nécessaires
-        const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath } = currentUploadingImage;
-
-        // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
-        const skyObjectString = skyObject.join(', ');
-
-        // Initialisation de la variable shotDate avec la date actuelle
-        let shotDate = new Date().toISOString();
-        // Déclaration de l'objet exifData pour stocker les données EXIF
-        let exifData = {};
-
-        const fileExtension = path.extname(imagePath).toLowerCase();
-
-        // Si l'extension du fichier est .jpeg ou .jpg, tente de lire les métadonnées EXIF
-        if (fileExtension === '.jpeg' || fileExtension === '.jpg') {
-            try {
-                // Lit les métadonnées EXIF du fichier
-                const buffer = fs.readFileSync(imagePath);
-                const parser = exifParser.create(buffer);
-                const result = parser.parse();
-
-                // Traitement des données EXIF et stockage dans l'objet exifData
-                if (result && result.tags) {
-                    // Ici, vous pouvez ajouter les données EXIF que vous voulez enregistrer, par exemple:
-                    exifData.camera = result.tags.Model; // modèle de la caméra
-                    exifData.exposure = result.tags.ExposureTime; // temps d'exposition
-                    exifData.resolution = `${result.tags.ImageWidth}x${result.tags.ImageHeight}`; // résolution de l'image
-
-
-                    // Gestion de la date de prise de vue
-                    if (result.tags.DateTimeOriginal) {
-                        // Convertit la date EXIF en format ISO si possible
-                        shotDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString();
-                    }
-                }
-
-                console.log("Raw EXIF :", result.tags);
-            } catch (error) {
-                console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
-            }
-        }
-
-        // Insère les données de l'image et les données EXIF dans la base de données
-        db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath, offsetPath, flatPath], function (err) {
-            if (err) {
-                return console.error(err.message);
-            }
-            console.log(`A row has been inserted with rowid ${this.lastID}`);
-            // Informe le processus de rendu qu'une nouvelle image a été ajoutée
-            event.reply("image-added", this.lastID);
-        });
-    });
-
-
-
-
-
-
-    // Gestionnaire d'événements pour l'événement "get-images" envoyé depuis le processus de rendu
-    ipcMain.on("get-images", (event) => {
-        // Sélectionne toutes les images de la base de données triées par date décroissante
-        db.all(`SELECT * FROM images ORDER BY date DESC`, [], (err, rows) => {
-            if (err) {
-                throw err;
-            }
-            // Envoie les données des images au processus de rendu
-            event.reply("get-images-reply", rows);
-        });
-    });
-
-    // Gestionnaire d'événements pour l'événement "delete-image" envoyé depuis le processus de rendu
-    ipcMain.on("delete-image", (event, id) => {
-        // Supprime l'image avec l'ID spécifié de la base de données
-        db.run(`DELETE FROM images WHERE id = ?`, id, (err) => {
-            if (err) {
-                return console.log(err.message);
-            }
-            console.log(`Row(s) deleted ${this.changes}`);
-            // Envoie une confirmation que l'image a été supprimée
-            event.reply("image-deleted", id);
-        });
-    });
 }
+
+
+
+// Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
+ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
+    // Destructuration de l'objet pour extraire les propriétés nécessaires
+    const { path: imagePath, name: imageName, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath } = currentUploadingImage;
+
+    // Convertissez le tableau des tags "skyObject" en une chaîne pour le stockage
+    const skyObjectString = skyObject.join(', ');
+
+    // Initialisation de la variable shotDate avec la date actuelle
+    let shotDate = new Date().toISOString();
+    // Déclaration de l'objet exifData pour stocker les données EXIF
+    let exifData = {};
+
+    const fileExtension = path.extname(imagePath).toLowerCase();
+
+    // Si l'extension du fichier est .jpeg ou .jpg, tente de lire les métadonnées EXIF
+    if (fileExtension === '.jpeg' || fileExtension === '.jpg') {
+        try {
+            // Lit les métadonnées EXIF du fichier
+            const buffer = fs.readFileSync(imagePath);
+            const parser = exifParser.create(buffer);
+            const result = parser.parse();
+
+            // Traitement des données EXIF et stockage dans l'objet exifData
+            if (result && result.tags) {
+                // Ici, vous pouvez ajouter les données EXIF que vous voulez enregistrer, par exemple:
+                exifData.camera = result.tags.Model; // modèle de la caméra
+                exifData.exposure = result.tags.ExposureTime; // temps d'exposition
+                exifData.resolution = `${result.tags.ImageWidth}x${result.tags.ImageHeight}`; // résolution de l'image
+
+                console.log("Métadonnées EXIF :", result.tags);
+
+
+
+                // Gestion de la date de prise de vue
+                if (result.tags.DateTimeOriginal) {
+                    // Convertit la date EXIF en format ISO si possible
+                    shotDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString();
+                }
+            }
+
+            console.log("Raw EXIF :", result.tags);
+        } catch (error) {
+            console.error("Erreur lors de la lecture des métadonnées EXIF:", error);
+        }
+    }
+
+    // Insère les données de l'image et les données EXIF dans la base de données
+    db.run(`INSERT INTO images(name, path, date, photoType, skyObject, constellation, location, opticalTube, mount, camera, objectType, darkPath, brutPath, offsetPath, flatPath) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [imageName, imagePath, shotDate, photoType, skyObjectString, constellation, location, opticalTube, mount, exifData.camera, objectType, darkPath, brutPath, offsetPath, flatPath], function (err) {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log(`A row has been inserted with rowid ${this.lastID}`);
+        // Informe le processus de rendu qu'une nouvelle image a été ajoutée
+        event.reply("image-added", this.lastID);
+    });
+});
+
+
+
+
+
+
+// Gestionnaire d'événements pour l'événement "get-images" envoyé depuis le processus de rendu
+ipcMain.on("get-images", (event) => {
+    // Sélectionne toutes les images de la base de données triées par date décroissante
+    db.all(`SELECT * FROM images ORDER BY date DESC`, [], (err, rows) => {
+        if (err) {
+            throw err;
+        }
+        // Envoie les données des images au processus de rendu
+        event.reply("get-images-reply", rows);
+    });
+});
+
+// Gestionnaire d'événements pour l'événement "delete-image" envoyé depuis le processus de rendu
+ipcMain.on("delete-image", (event, id) => {
+    // Supprime l'image avec l'ID spécifié de la base de données
+    db.run(`DELETE FROM images WHERE id = ?`, id, (err) => {
+        if (err) {
+            return console.log(err.message);
+        }
+        console.log(`Row(s) deleted ${this.changes}`);
+        // Envoie une confirmation que l'image a été supprimée
+        event.reply("image-deleted", id);
+    });
+});
+
 
 // Écoute l'événement "ready" de l'application et crée la fenêtre lorsqu'elle est prête
 app.whenReady().then(createWindow);
@@ -357,13 +353,11 @@ process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 ipcMain.on('convert-fit', (event, imagePath) => {
 
-    const isWindows = process.platform === 'win32';
-    const scriptExtension = isWindows ? '.exe' : '';
-    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : `converter${scriptExtension}`;
 
+    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, 'converter', scriptName);
+        : path.join(process.resourcesPath, './converter', scriptName);
 
 
     exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
