@@ -92,6 +92,12 @@ function createWindow() {
 }
 
 
+app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
 
 // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
 ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
