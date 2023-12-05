@@ -6,21 +6,29 @@ const fs = require('fs');
 const exifParser = require('exif-parser');
 const { exec, spawn } = require('child_process');
 const os = require('os');
+const sharp = require('sharp');
 
 const https = require('https');
 const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
 
-// Obtient les chemins du dossier de données de l'utilisateur et des documents
-const userDataPath = app.getPath('userData');
-const userDocumentsPath = app.getPath('documents');
-
-// [Autres parties du code...]
 
 
-// Construit le chemin complet de la base de données dans ce dossier
-const dbPath = path.join(userDocumentsPath, 'Database-Meridio.db');
+const appName = 'Eidos'; // Remplacez par le nom de votre application
+const appFolderPath = path.join(os.homedir(), 'Documents', appName);
 
+// Créer le dossier de l'application s'il n'existe pas
+if (!fs.existsSync(appFolderPath)) {
+    fs.mkdirSync(appFolderPath);
+}
 
+const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
+
+// Créer le dossier des images converties s'il n'existe pas
+if (!fs.existsSync(convertedImagesPath)) {
+    fs.mkdirSync(convertedImagesPath);
+}
+
+const dbPath = path.join(appFolderPath, 'Database.db');
 
 console.log("Database path:", dbPath);
 
@@ -434,13 +442,26 @@ process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 ipcMain.on('convert-fit', (event, imagePath) => {
 
+    // Déterminer le chemin de sortie dans le dossier 'convertedImage'
+
+    const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
+
+    // Assurez-vous que le dossier 'convertedImage' existe
+    if (!fs.existsSync(convertedImagesPath)) {
+        fs.mkdirSync(convertedImagesPath, { recursive: true });
+    }
+
+    const outputFilename = path.basename(imagePath).replace('.fits', '.webp').replace('.fit', '.webp');
+    const outputImagePath = path.join(convertedImagesPath, outputFilename);
+
+
     const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, './python', './converter', scriptName);
 
 
-    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
+    exec(`"${scriptPath}" "${imagePath}" "${outputImagePath}"`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Erreur de conversion: ${error}`);
             event.reply('conversion-error', error.message);
@@ -500,14 +521,17 @@ ipcMain.on('start-blink', (event, imagePaths) => {
 
 
 
+
 // Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
 ipcMain.on('open-fit-file', (event, imagePath) => {
+
     const scriptName = process.env.NODE_ENV === 'development' ? 'open_image.py' : 'open_image';
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, './python', './open_image', scriptName);
 
     exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
+
         if (error) {
             console.error(`Erreur lors de l'exécution du script Python : ${error}`);
             dialog.showMessageBox({
@@ -517,7 +541,6 @@ ipcMain.on('open-fit-file', (event, imagePath) => {
             });
             return;
         }
-
 
         console.log(`Résultat : ${stdout}`);
         console.log(`Error : ${stderr}`);
@@ -600,4 +623,64 @@ ipcMain.on('resize-window', (event, targetWidth, targetHeight) => {
             }
         }, 10); // 20 ms pour chaque étape de l'animation
     }
+});
+
+
+ipcMain.on('convert-tif', (event, imagePath) => {
+    console.log(`Début de la conversion du fichier TIFF : ${imagePath}`);
+
+
+    const outputImagePath = path.join(convertedImagesPath, path.basename(imagePath).replace('.tif', '.webp'));
+
+    console.log(`Image de sortie sera enregistrée sous : ${outputImagePath}`);
+
+    const maxSize = 200; // Taille maximale pour la largeur ou la hauteur
+
+    sharp(imagePath)
+        .resize({
+            width: maxSize,
+            height: maxSize,
+            fit: sharp.fit.inside,
+            withoutEnlargement: true
+        }) // Redimensionner avec la taille maximale
+        .toFormat('webp') // Convertir en WebP
+        .toFile(outputImagePath)
+        .then(() => {
+            console.log(`Conversion réussie pour : ${imagePath}`);
+
+            // Mise à jour de la base de données avec le chemin de l'image convertie
+            db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [outputImagePath, imagePath], function (err) {
+                if (err) {
+                    console.error('Erreur lors de la mise à jour de la base de données', err);
+                    event.sender.send('db-update-error', { imagePath, error: err.message });
+                    return;
+                }
+
+                console.log(`Base de données mise à jour avec succès pour : ${imagePath}`);
+                event.sender.send('conversion-and-db-update-done', { imagePath, convertedPath: outputImagePath });
+            });
+        })
+        .catch(err => {
+            console.error('Erreur de conversion', err);
+            event.sender.send('conversion-error', { imagePath, error: err.message });
+        });
+});
+
+
+
+
+// Gestionnaire d'événements pour l'événement "open-default-app" envoyé depuis le processus de rendu
+ipcMain.on('open-default-app', (event, filePath) => {
+    shell.openPath(filePath).then((response) => {
+        if (response) {
+            console.error(`Erreur lors de l'ouverture du fichier : ${response}`);
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Error',
+                message: `Error: ${response}`
+            });
+        } else {
+            console.log(`Fichier ouvert avec succès : ${filePath}`);
+        }
+    });
 });

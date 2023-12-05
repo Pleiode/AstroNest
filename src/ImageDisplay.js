@@ -25,7 +25,11 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     const convertImage = (imagePath) => {
         if (!convertedImages[imagePath]) {
             setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
-            window.electron.ipcRenderer.send('convert-fit', imagePath);
+            if (imagePath.endsWith('.tif')) {
+                window.electron.ipcRenderer.send('convert-tif', imagePath);
+            } else {
+                window.electron.ipcRenderer.send('convert-fit', imagePath);
+            }
         }
     };
 
@@ -50,11 +54,16 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
             if (image.convertPath) {
                 // Utilisez convertPath si disponible
                 setConvertedImages(prev => ({ ...prev, [image.path]: image.convertPath }));
-            } else if ((image.path.endsWith('.fit') || image.path.endsWith('.fits')) && !convertedImages[image.path]) {
-                // Déclenchez la conversion si nécessaire, mais seulement pour les images limitées
-                convertImage(image.path);
+            } else if (!convertedImages[image.path]) {
+                // Vérifiez l'extension du fichier et déclenchez la conversion si nécessaire
+                if (image.path.endsWith('.fit') || image.path.endsWith('.fits')) {
+                    convertImage(image.path, 'fit');
+                } else if (image.path.endsWith('.tif')) {
+                    convertImage(image.path, 'tif');
+                }
             }
         });
+
 
         const conversionListener = (event, { imagePath, convertedPath }) => {
             console.log("Conversion terminée:", imagePath, convertedPath);
@@ -98,7 +107,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
             console.log(image.path)
         } else {
-            setSelectedImage(image);
+            window.electron.ipcRenderer.send('open-default-app', image.path);
         }
     };
 
@@ -254,6 +263,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
 
 
+            {/*}
             {selectedImage && (
                 <div
                     className="fullscreen-image-container"
@@ -275,6 +285,9 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                     />
                 </div>
             )}
+            */}
+
+
 
             {showNotification && (
                 <div style={notificationStyle}>
@@ -284,7 +297,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
 
             {imageLimit < sortedImages().length && (
-                <div style={{ height: '20px'}}>
+                <div style={{ height: '20px' }}>
                     <p>Chargement...</p>
                 </div>
             )}

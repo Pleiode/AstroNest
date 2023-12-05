@@ -99,7 +99,6 @@ const Container = () => {
 
 
 
-
     useEffect(() => {
         const { ipcRenderer } = window.electron;
         ipcRenderer.send("get-images");

@@ -163,7 +163,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
         }
 
         setSelectedFiles(files); // Mettre à jour l'état avec les fichiers sélectionnés
-        handleImageUpload(files); // Gérer directement les fichiers sans ouvrir la modale
+        handleImageUpload(files); // Gérer directement les fichiers
     };
 
 
