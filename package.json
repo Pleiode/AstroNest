@@ -21,6 +21,9 @@
     "mac": {
       "target": "dmg"
     },
+    "win": {
+      "target": "zip"
+    },
     "extraResources": [
       {
         "from": "./converter",
