@@ -365,7 +365,7 @@ ipcMain.on('convert-fit', (event, imagePath) => {
     const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
     const scriptPath = process.env.NODE_ENV === 'development'
         ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './converter', scriptName);
+        : path.join(process.resourcesPath, './python', './converter', scriptName);
 
 
     exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {

@@ -26,8 +26,8 @@
     },
     "extraResources": [
       {
-        "from": "./converter",
-        "to": "converter"
+        "from": "./python",
+        "to": "python"
       }
     ]
   },
