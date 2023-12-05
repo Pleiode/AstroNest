@@ -122,7 +122,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
                 objectType: objectType,
                 darkPath: darkPath,
                 brutPath: brutPath,
-                offsetPath : offsetPath,
+                offsetPath: offsetPath,
             };
 
             setUploadingImage(currentUploadingImage);
@@ -153,7 +153,15 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
 
     // Fonction pour gérer la sélection de fichiers
     const handleFileSelected = (e) => {
-        const files = Array.from(e.target.files); // Stocker les fichiers sélectionnés
+        // Stocker les fichiers sélectionnés
+        let files = Array.from(e.target.files);
+
+        // Limiter le nombre de fichiers à 20
+        if (files.length > 20) {
+            files = files.slice(0, 20); // Ne garder que les 20 premiers fichiers
+            alert('Pour des raisons de performance, seuls 20 fichiers peuvent être importés à la fois.'); // Optionnel: Afficher un message à l'utilisateur
+        }
+
         setSelectedFiles(files); // Mettre à jour l'état avec les fichiers sélectionnés
         handleImageUpload(files); // Gérer directement les fichiers sans ouvrir la modale
     };

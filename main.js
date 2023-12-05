@@ -73,15 +73,18 @@ function createWindow() {
         }
     };
 
+    let win = new BrowserWindow(windowOptions);
+
     // Ajuste le style de la barre de titre pour Windows
     if (isWindows) {
         windowOptions.frame = true; // Utilise la barre de titre native de Windows
+        win.setMenu(null);
     } else {
         windowOptions.titleBarStyle = 'hidden';
         windowOptions.titleBarOverlay = true;
     }
 
-    let win = new BrowserWindow(windowOptions);
+
 
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
@@ -358,7 +361,6 @@ process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 
 ipcMain.on('convert-fit', (event, imagePath) => {
-
 
     const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
     const scriptPath = process.env.NODE_ENV === 'development'
