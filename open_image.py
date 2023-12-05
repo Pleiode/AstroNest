@@ -1,9 +1,13 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import numpy as np
+import matplotlib
+matplotlib.use('TkAgg')  # Utiliser le backend TkAgg pour l'interactivité
 import matplotlib.pyplot as plt
 from astropy.io import fits
 import matplotlib.widgets as widgets
 import sys
-import matplotlib as mpl
 
 def adjust_grayscale(image_data, upper_percentile):
     """ Ajuste l'échelle des gris en fonction du percentile supérieur spécifié. """
@@ -14,8 +18,6 @@ def adjust_grayscale(image_data, upper_percentile):
 
 def display_fit_image(file_path):
     """ Affiche une image FITS avec un curseur pour ajuster le percentile supérieur. """
-    mpl.rcParams['toolbar'] = 'toolbar2'  # Active la barre d'outils de navigation
-
     with fits.open(file_path) as hdul:
         image_data = hdul[0].data
 
@@ -28,7 +30,7 @@ def display_fit_image(file_path):
     img_plot = ax.imshow(image_data, cmap='gray', norm=plt.Normalize())
     ax.axis('off')
 
-    # Curseur pour le percentile supérieur, ajusté pour des valeurs très élevées
+    # Curseur pour le percentile supérieur
     slider_height = 0.03
     ax_upper = plt.axes([0.25, 0.05, 0.65, slider_height], facecolor='lightgoldenrodyellow')
 
@@ -43,7 +45,10 @@ def display_fit_image(file_path):
 
     slider_upper.on_changed(update)
 
-    plt.show()
+    try:
+        plt.show()
+    except Exception as e:
+        print(f"Impossible d'afficher la figure : {e}")
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:

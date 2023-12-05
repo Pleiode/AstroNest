@@ -60,7 +60,7 @@ function createWindow() {
     // Détermine si l'application s'exécute sur Windows
     const isWindows = os.platform() === 'win32';
 
-    // Crée une nouvelle fenêtre du navigateur Electron
+    // Options de base pour la fenêtre
     let windowOptions = {
         width: 1000,
         height: 650,
@@ -73,18 +73,21 @@ function createWindow() {
         }
     };
 
-    let win = new BrowserWindow(windowOptions);
-
     // Ajuste le style de la barre de titre pour Windows
     if (isWindows) {
         windowOptions.frame = true; // Utilise la barre de titre native de Windows
-        win.setMenu(null);
-    } else {
+    } else if (process.platform === 'darwin') {
         windowOptions.titleBarStyle = 'hidden';
-        windowOptions.titleBarOverlay = true;
+        windowOptions.frame = false; // Pour une barre de titre complètement personnalisée
     }
 
+    // Crée une nouvelle fenêtre du navigateur Electron
+    let win = new BrowserWindow(windowOptions);
 
+    // Supprime la barre de menu pour Windows
+    if (isWindows) {
+        win.setMenu(null);
+    }
 
     // Charge le fichier HTML principal dans la fenêtre
     win.loadFile('dist/index.html');
@@ -96,10 +99,78 @@ function createWindow() {
 
 
 app.on('window-all-closed', () => {
-    if (process.platform !== 'darwin') {
-        app.quit();
-    }
+    app.quit();
 });
+
+// Fonction pour vérifier les mises à jour de l'application
+function checkForUpdates() {
+    console.log("Début de la vérification des mises à jour...");
+
+    const options = {
+        hostname: 'api.github.com',
+        path: '/repos/Pleiode/Meridio/releases/latest',
+        method: 'GET',
+        headers: { 'User-Agent': 'Meridio' }
+    };
+
+    https.get(options, (res) => {
+        console.log("Réponse reçue de l'API GitHub.");
+
+        console.log(`Statut de la réponse HTTP: ${res.statusCode}`);
+
+        let data = '';
+
+        res.on('data', (chunk) => {
+            data += chunk;
+            console.log("Réception des données...");
+        });
+
+        res.on('end', () => {
+            console.log("Fin de la réception des données.");
+            console.log("Données brutes reçues:", data);
+
+            try {
+                const releaseInfo = JSON.parse(data);
+                console.log("Informations de la release analysées:", releaseInfo);
+
+
+                if (releaseInfo.assets && releaseInfo.assets.length > 0) {
+                    const latestVersion = releaseInfo.tag_name;
+                    const downloadUrl = releaseInfo.assets[0].browser_download_url;
+
+                    console.log("Dernière version:", latestVersion);
+                    console.log("URL de téléchargement:", downloadUrl);
+
+                    if (latestVersion !== packageJson.version) {
+                        console.log("Mise à jour disponible.");
+                        dialog.showMessageBox({
+                            type: 'info',
+                            title: 'Mise à jour disponible',
+                            message: 'Une nouvelle version de l’application est disponible. Voulez-vous la télécharger et l’installer maintenant ?',
+                            buttons: ['Oui', 'Plus tard']
+                        }).then(result => {
+                            if (result.response === 0) {
+                                console.log("L'utilisateur a choisi de télécharger la mise à jour.");
+                                require('electron').shell.openExternal(downloadUrl);
+                            } else {
+                                console.log("L'utilisateur a choisi de reporter la mise à jour.");
+                            }
+                        });
+                    } else {
+                        console.log("L'application est à jour.");
+                    }
+                } else {
+                    console.log('Aucun asset trouvé pour la dernière version.');
+                }
+            } catch (e) {
+                console.error("Erreur lors de l'analyse des données de l'API GitHub:", e);
+            }
+        });
+    }).on('error', (e) => {
+        console.error("Erreur lors de la requête à l'API GitHub:", e);
+    });
+}
+
 
 
 // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
@@ -360,6 +431,7 @@ ipcMain.on('export-db-to-json', (event) => {
 process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 
+
 ipcMain.on('convert-fit', (event, imagePath) => {
 
     const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
@@ -372,6 +444,13 @@ ipcMain.on('convert-fit', (event, imagePath) => {
         if (error) {
             console.error(`Erreur de conversion: ${error}`);
             event.reply('conversion-error', error.message);
+
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Erreur',
+                message: `Erreur lors de l'exécution du script: ${error.message}`
+            });
+
             return;
         }
 
@@ -394,117 +473,68 @@ ipcMain.on('convert-fit', (event, imagePath) => {
 
 
 ipcMain.on('start-blink', (event, imagePaths) => {
-    const scriptPath = "blink.py";
+    const scriptName = process.env.NODE_ENV === 'development' ? 'blink.py' : 'blink'; // Nom du script avec extension pour le développement
+    const scriptPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, './python', './blink', scriptName);
 
-    const pythonProcess = spawn('python3', [scriptPath, ...imagePaths]);
+    exec(`"${scriptPath}" ${imagePaths.join(' ')}`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors de l'exécution du script: ${error}`);
+            event.reply('blink-error', error.message);
 
-    pythonProcess.stdout.on('data', (data) => {
-        console.log(`stdout: ${data}`);
-    });
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Erreur',
+                message: `Erreur lors de l'exécution du script: ${error.message}`
+            });
+            return;
 
-    pythonProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
+        }
 
-    pythonProcess.on('close', (code) => {
-        console.log(`child process exited with code ${code}`);
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
     });
 });
 
 
-
-
-
-function checkForUpdates() {
-    console.log("Début de la vérification des mises à jour...");
-
-    const options = {
-        hostname: 'api.github.com',
-        path: '/repos/Pleiode/Meridio/releases/latest',
-        method: 'GET',
-        headers: { 'User-Agent': 'Meridio' }
-    };
-
-    https.get(options, (res) => {
-        console.log("Réponse reçue de l'API GitHub.");
-
-        console.log(`Statut de la réponse HTTP: ${res.statusCode}`);
-
-        let data = '';
-
-        res.on('data', (chunk) => {
-            data += chunk;
-            console.log("Réception des données...");
-        });
-
-        res.on('end', () => {
-            console.log("Fin de la réception des données.");
-            console.log("Données brutes reçues:", data);
-
-            try {
-                const releaseInfo = JSON.parse(data);
-                console.log("Informations de la release analysées:", releaseInfo);
-
-
-                if (releaseInfo.assets && releaseInfo.assets.length > 0) {
-                    const latestVersion = releaseInfo.tag_name;
-                    const downloadUrl = releaseInfo.assets[0].browser_download_url;
-
-                    console.log("Dernière version:", latestVersion);
-                    console.log("URL de téléchargement:", downloadUrl);
-
-                    if (latestVersion !== packageJson.version) {
-                        console.log("Mise à jour disponible.");
-                        dialog.showMessageBox({
-                            type: 'info',
-                            title: 'Mise à jour disponible',
-                            message: 'Une nouvelle version de l’application est disponible. Voulez-vous la télécharger et l’installer maintenant ?',
-                            buttons: ['Oui', 'Plus tard']
-                        }).then(result => {
-                            if (result.response === 0) {
-                                console.log("L'utilisateur a choisi de télécharger la mise à jour.");
-                                require('electron').shell.openExternal(downloadUrl);
-                            } else {
-                                console.log("L'utilisateur a choisi de reporter la mise à jour.");
-                            }
-                        });
-                    } else {
-                        console.log("L'application est à jour.");
-                    }
-                } else {
-                    console.log('Aucun asset trouvé pour la dernière version.');
-                }
-            } catch (e) {
-                console.error("Erreur lors de l'analyse des données de l'API GitHub:", e);
-            }
-        });
-    }).on('error', (e) => {
-        console.error("Erreur lors de la requête à l'API GitHub:", e);
-    });
-}
 
 
 // Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
 ipcMain.on('open-fit-file', (event, imagePath) => {
-    exec(`python3 open_image.py "${imagePath}"`, (error, stdout, stderr) => {
+    const scriptName = process.env.NODE_ENV === 'development' ? 'open_image.py' : 'open_image';
+    const scriptPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, './python', './open_image', scriptName);
+
+    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Erreur lors de l'exécution du script Python : ${error}`);
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Erreur',
+                message: `Erreur lors de l'exécution du script: ${error.message}`
+            });
             return;
         }
+
+
         console.log(`Résultat : ${stdout}`);
+        console.log(`Error : ${stderr}`);
+        // Traitement supplémentaire si nécessaire
     });
 });
 
 
+
 // Gestionnaire d'événements pour l'événement "open-in-finder" envoyé depuis le processus de rendu
 ipcMain.on('open-in-finder', (event, filePath) => {
-
     shell.showItemInFolder(filePath);
 });
 
 
 
-
+// Gestionnaire d'événements pour l'événement "export-image" envoyé depuis le processus de rendu
 ipcMain.on('export-image', async (event, filePath) => {
     console.log("Reçu export-image", filePath);
 
@@ -520,11 +550,12 @@ ipcMain.on('export-image', async (event, filePath) => {
             return;
         }
 
-        const pythonCommand = `python3 export-convert.py "${filePath}" "${savePath}"`;
+        const scriptName = process.env.NODE_ENV === 'development' ? 'export-convert.py' : 'export-convert';
+        const scriptPath = process.env.NODE_ENV === 'development'
+            ? path.join(__dirname, scriptName)
+            : path.join(process.resourcesPath, './python', './export-convert', scriptName);
 
-
-
-        exec(pythonCommand, (error, stdout, stderr) => {
+        exec(`"${scriptPath}" "${filePath}" "${savePath}"`, (error, stdout, stderr) => {
             if (error || stderr) {
                 console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
                 dialog.showErrorBox('Erreur d\'exportation', 'Une erreur est survenue lors de l\'exportation de l\'image.');
