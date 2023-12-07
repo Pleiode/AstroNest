@@ -27,11 +27,10 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
             setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
             if (imagePath.endsWith('.cr2') || imagePath.endsWith('.nef') || imagePath.endsWith('.arw')) { // Ajoutez d'autres extensions RAW si nécessaire
                 window.electron.ipcRenderer.send('convert-raw', imagePath);
-                
             } else if (imagePath.endsWith('.tif')) {
-                window.electron.ipcRenderer.send('convert-tif', imagePath);
+                window.electron.ipcRenderer.send('convert', imagePath);
             } else {
-                window.electron.ipcRenderer.send('convert-fit', imagePath);
+                window.electron.ipcRenderer.send('convert', imagePath);
             }
         }
     };
@@ -78,6 +77,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
             setLoadingImages(prev => ({ ...prev, [imagePath]: false })); // Mettre à jour l'état de chargement
         };
 
+
         window.electron.ipcRenderer.on('conversion-done', conversionListener);
 
         return () => {
@@ -91,6 +91,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     const getImageSrc = (image) => {
         return convertedImages[image.path] || image.path;
     };
+
 
     const DateEnLettres = ({ dateKey }) => {
         if (!dateKey) {
@@ -132,7 +133,6 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
     const renderImage = (image) => {
         const isImageLoading = loadingImages[image.path];
-
 
         return isImageLoading ? (
             <div className="skeleton"></div>

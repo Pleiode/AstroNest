@@ -188,7 +188,7 @@ const Header = ({ searchTerm, onSearchChange, onDropImageUpload }) => {
             <input
                 ref={fileInputRef} // Référence pour accéder à cet élément
                 type="file"
-                accept="image/png, image/jpeg, .cr2, .arw, .fit, .tif, .tiff"
+                accept="image/webp, image/png, image/jpeg, .cr2, .arw, .fit, .tif, .tiff"
 
                 style={{ display: 'none' }} // Caché à l'utilisateur
                 onChange={handleFileSelected} // Quand un fichier est sélectionné, 'onImportClick' est appelé

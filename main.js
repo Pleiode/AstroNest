@@ -18,6 +18,7 @@ const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userDa
 process.env.APP_ROOT_PATH = path.join(__dirname, '..');
 
 
+
 // Créer le dossier de l'application s'il n'existe pas
 if (!fs.existsSync(appFolderPath)) {
     fs.mkdirSync(appFolderPath);
@@ -598,43 +599,10 @@ ipcMain.on('convert-raw', (event, imagePath) => {
     });
 });
 
-// Converter Tiff
-ipcMain.on('convert-tif', (event, imagePath) => {
-    console.log(`Début de la conversion du fichier TIFF : ${imagePath}`);
 
-    const outputImagePath = path.join(convertedImagesPath, path.basename(imagePath).replace('.tif', '.webp'));
-
-    console.log(`Image de sortie sera enregistrée sous : ${outputImagePath}`);
-
-    const maxSize = 200; // Taille maximale pour la largeur ou la hauteur
-
-    const convertCommand = `convert "${imagePath}" -resize ${maxSize}x${maxSize} -format webp "${outputImagePath}"`;
-
-    exec(convertCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error('Erreur de conversion', error);
-            event.sender.send('conversion-error', { imagePath, error: error.message });
-            return;
-        }
-
-        console.log(`Conversion réussie pour : ${imagePath}`);
-
-        // Mise à jour de la base de données avec le chemin de l'image convertie
-        db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [outputImagePath, imagePath], function (err) {
-            if (err) {
-                console.error('Erreur lors de la mise à jour de la base de données', err);
-                event.sender.send('db-update-error', { imagePath, error: err.message });
-                return;
-            }
-
-            console.log(`Base de données mise à jour avec succès pour : ${imagePath}`);
-            event.sender.send('conversion-done', { imagePath, convertedPath: outputImagePath });
-        });
-    });
-});
 
 // Converter Fit
-ipcMain.on('convert-fit', (event, imagePath) => {
+ipcMain.on('convert', (event, imagePath) => {
 
     // Déterminer le chemin de sortie dans le dossier 'convertedImage'
 
