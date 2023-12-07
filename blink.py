@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.widgets import Slider
 import numpy as np
-import imageio
+import imageio.v2 as imageio
 import os  # Ajouté pour obtenir le nom du fichier
 
 def load_images(paths):

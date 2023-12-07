@@ -26,9 +26,8 @@ def adjust_contrast_bias(data, contrast=1.0, bias=0.0):
 async def convert_fits_to_webp(input_path, output_path, max_size=200, loop=None):
     async with semaphore:
         if not os.path.exists(input_path):
-            print(f"Le fichier spécifié n'a pas été trouvé: {input_path}")
+            print(input_path)
             return
-
  
 
         try:

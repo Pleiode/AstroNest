@@ -12,6 +12,7 @@
 # production
 /build
 /python
+/dist/bundle.js
 
 # misc
 .DS_Store

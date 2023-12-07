@@ -435,7 +435,10 @@ ipcMain.on('start-blink', (event, imagePaths) => {
         ? path.join(__dirname, scriptName)
         : path.join(process.resourcesPath, './python', './blink', scriptName);
 
-    exec(`"${scriptPath}" ${imagePaths.join(' ')}`, (error, stdout, stderr) => {
+
+    console.log(imagePaths)
+
+    exec(`"${scriptPath}" ${imagePaths.map(path => `"${path}"`).join(' ')}`, (error, stdout, stderr) => {
         if (error) {
             console.error(`Erreur lors de l'exécution du script: ${error}`);
             event.reply('blink-error', error.message);
@@ -634,8 +637,6 @@ ipcMain.on('convert-tif', (event, imagePath) => {
 ipcMain.on('convert-fit', (event, imagePath) => {
 
     // Déterminer le chemin de sortie dans le dossier 'convertedImage'
-
-    const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
 
     // Assurez-vous que le dossier 'convertedImage' existe
     if (!fs.existsSync(convertedImagesPath)) {

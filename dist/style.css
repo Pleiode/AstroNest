@@ -180,7 +180,7 @@ button.special {
     font-size: 12px;
     background-color: var(--greyborder);
     font-weight: 400;
-    color: var(--white);
+    color: white;
     border: 1px solid #484848;
 }
 

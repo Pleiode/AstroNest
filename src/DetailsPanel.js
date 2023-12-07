@@ -504,7 +504,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
 
                                 <div style={{ display: 'flex', gap: '8px' }} >
                                     <button
-                                        style={{ backgroundColor: '#8532F2' }}
+                                        style={{ backgroundColor: '#8532F2', border: 'none' }}
                                         onClick={handleBlink}
                                         className="special"
 
