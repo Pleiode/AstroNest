@@ -25,13 +25,17 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     const convertImage = (imagePath) => {
         if (!convertedImages[imagePath]) {
             setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
-            if (imagePath.endsWith('.tif')) {
+            if (imagePath.endsWith('.cr2') || imagePath.endsWith('.nef') || imagePath.endsWith('.arw')) { // Ajoutez d'autres extensions RAW si nécessaire
+                window.electron.ipcRenderer.send('convert-raw', imagePath);
+                
+            } else if (imagePath.endsWith('.tif')) {
                 window.electron.ipcRenderer.send('convert-tif', imagePath);
             } else {
                 window.electron.ipcRenderer.send('convert-fit', imagePath);
             }
         }
     };
+
 
     // Fonction pour charger plus d'images
     const loadMoreImages = () => {
@@ -58,11 +62,14 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                 // Vérifiez l'extension du fichier et déclenchez la conversion si nécessaire
                 if (image.path.endsWith('.fit') || image.path.endsWith('.fits')) {
                     convertImage(image.path, 'fit');
-                } else if (image.path.endsWith('.tif')) {
+                } else if (image.path.endsWith('.tif') || image.path.endsWith('.tiff')) {
                     convertImage(image.path, 'tif');
+                } else if (image.path.endsWith('.cr2') || image.path.endsWith('.arw') /* Ajoutez d'autres extensions RAW si nécessaire */) {
+                    convertImage(image.path, 'raw');
                 }
             }
         });
+
 
 
         const conversionListener = (event, { imagePath, convertedPath }) => {

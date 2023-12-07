@@ -88,8 +88,7 @@ const App = () => {
       <Router>
         <Navbar />
         <Routes>
-          <Route path="/" element={<Container />} />
-          <Route index path="/pictures" element={<Container />} />
+          <Route index path="/" element={<Container />} />
         </Routes>
       </Router>
     </div>

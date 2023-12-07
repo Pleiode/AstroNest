@@ -28,7 +28,7 @@ function Navbar() {
       <div>
         <ul className="navbar-links">
           <li>
-            <Link to="/pictures" className={`nav-link ${pathname === "/pictures" ? 'active' : ''}`}>
+            <Link to="/" className={`nav-link ${pathname === "/" ? 'active' : ''}`}>
               <ImageIcon className='navbar-icon' />
               Photo Library
             </Link>

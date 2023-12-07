@@ -6,39 +6,29 @@ const fs = require('fs');
 const exifParser = require('exif-parser');
 const { exec, spawn } = require('child_process');
 const os = require('os');
-const sharp = require('sharp');
-
 const https = require('https');
 const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
-
-
-
 const appName = 'Eidos'; // Remplacez par le nom de votre application
 const appFolderPath = path.join(os.homedir(), 'Documents', appName);
+const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
+const dbPath = path.join(appFolderPath, 'Database.db');
+let win;
+let db;
+const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userData est un répertoire approprié pour stocker des données d'application
+process.env.APP_ROOT_PATH = path.join(__dirname, '..');
+
 
 // Créer le dossier de l'application s'il n'existe pas
 if (!fs.existsSync(appFolderPath)) {
     fs.mkdirSync(appFolderPath);
 }
 
-const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
-
 // Créer le dossier des images converties s'il n'existe pas
 if (!fs.existsSync(convertedImagesPath)) {
     fs.mkdirSync(convertedImagesPath);
 }
 
-const dbPath = path.join(appFolderPath, 'Database.db');
-
-console.log("Database path:", dbPath);
-
-let win;
-let db;
-
-
 // Définissez le chemin du fichier de journalisation
-const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userData est un répertoire approprié pour stocker des données d'application
-
 console.log("Log file path:", logFilePath);
 
 // Redirigez la sortie de la console vers le fichier de journalisation
@@ -106,9 +96,7 @@ function createWindow() {
 }
 
 
-app.on('window-all-closed', () => {
-    app.quit();
-});
+
 
 // Fonction pour vérifier les mises à jour de l'application
 function checkForUpdates() {
@@ -180,6 +168,69 @@ function checkForUpdates() {
 }
 
 
+// Écoute l'événement "ready" de l'application et crée la fenêtre lorsqu'elle est prête
+app.whenReady().then(createWindow);
+
+
+
+// Fonction pour créer la base de données s'il n'existe pas
+function createDatabase() {
+    // Ouvre la base de données ou la crée si elle n'existe pas
+    db = new sqlite3.Database(dbPath, (err) => {
+        if (err) {
+            console.error("Error opening database:", err);
+            return;
+        }
+    });
+
+    // Crée la table "images" si elle n'existe pas déjà
+    db.run(`CREATE TABLE IF NOT EXISTS images(
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        convertPath TEXT,
+        path TEXT,
+        skyObject TEXT,
+        objectType TEXT,
+        constellation TEXT,
+        AD TEXT,
+        DEC TEXT,
+        date TEXT,
+        location TEXT,
+        photoType TEXT,
+        resolution TEXT,
+        size REAL,
+        instrument TEXT,
+        opticalTube TEXT,
+        mount TEXT,
+        camera TEXT,
+        exposition TEXT,
+        darkPath TEXT,
+        flatPath TEXT,
+        brutPath TEXT,
+        offsetPath TEXT,
+        note TEXT
+    )`, (err) => {
+        if (err) {
+            console.error(err.message);
+        }
+    });
+
+    {/* 
+
+    //Ajout nouvelle colonne
+    db.run(`ALTER TABLE images ADD COLUMN nouvelleColonne TEXT`, (err) => {
+        if (err) {
+            if (err.message.includes("duplicate column name")) {
+                console.log("La colonne 'nouvelleColonne' existe déjà.");
+            } else {
+                console.error("Erreur lors de l'ajout de la nouvelle colonne:", err.message);
+            }
+        } else {
+            console.log("Colonne 'nouvelleColonne' ajoutée avec succès.");
+        }
+    });*/}
+}
+
 
 // Gestionnaire d'événements pour l'événement "image-uploaded" envoyé depuis le processus de rendu
 ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
@@ -239,10 +290,9 @@ ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
     });
 });
 
-
-
-
-
+app.on('window-all-closed', () => {
+    app.quit();
+});
 
 // Gestionnaire d'événements pour l'événement "get-images" envoyé depuis le processus de rendu
 ipcMain.on("get-images", (event) => {
@@ -269,54 +319,6 @@ ipcMain.on("delete-image", (event, id) => {
     });
 });
 
-
-// Écoute l'événement "ready" de l'application et crée la fenêtre lorsqu'elle est prête
-app.whenReady().then(createWindow);
-
-
-// Fonction pour créer la base de données s'il n'existe pas
-function createDatabase() {
-    // Ouvre la base de données ou la crée si elle n'existe pas
-    db = new sqlite3.Database(dbPath, (err) => {
-        if (err) {
-            console.error("Error opening database:", err);
-            return;
-        }
-    });
-
-    // Crée la table "images" si elle n'existe pas déjà
-    db.run(`CREATE TABLE IF NOT EXISTS images(
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        convertPath TEXT,
-        path TEXT,
-        skyObject TEXT,
-        objectType TEXT,
-        constellation TEXT,
-        AD TEXT,
-        DEC TEXT,
-        date TEXT,
-        location TEXT,
-        photoType TEXT,
-        resolution TEXT,
-        size REAL,
-        instrument TEXT,
-        opticalTube TEXT,
-        mount TEXT,
-        camera TEXT,
-        exposition TEXT,
-        darkPath TEXT,
-        flatPath TEXT,
-        brutPath TEXT,
-        offsetPath TEXT,
-        note TEXT
-    )`, (err) => {
-        if (err) {
-            console.error(err.message);
-        }
-    });
-}
-
 // Gestionnaire d'événements pour l'événement "update-Type" envoyé depuis le processus de rendu
 ipcMain.on("update-Type", (event, { imageId, photoType }) => {
     // Met à jour le champ "photoType" de l'image avec l'ID spécifié dans la base de données
@@ -332,7 +334,6 @@ ipcMain.on("update-Type", (event, { imageId, photoType }) => {
         event.reply("update-Type-reply", { success: true });
     });
 });
-
 
 // Gestionnaire d'événements pour l'événement "update-image-info" envoyé depuis le processus de rendu
 ipcMain.on("update-image-info", (event, updatedImage) => {
@@ -356,8 +357,6 @@ ipcMain.on("update-image-info", (event, updatedImage) => {
     });
 });
 
-// ... Vos autres imports et initialisations ...
-
 // Ajoutez une nouvelle écoute pour l'événement "get-skyobjects"
 ipcMain.on('get-skyobjects', (event) => {
     db.all('SELECT skyObject FROM images', [], (err, rows) => {
@@ -369,8 +368,6 @@ ipcMain.on('get-skyobjects', (event) => {
         }
     });
 });
-
-
 
 ipcMain.on('update-image-field', (event, updatedField) => {
     // Utilisez la décomposition pour obtenir l'ID et les autres champs
@@ -390,9 +387,6 @@ ipcMain.on('update-image-field', (event, updatedField) => {
         });
     });
 });
-
-
-
 
 ipcMain.on('export-db-to-json', (event) => {
     console.log("Reçu export-db-to-json");
@@ -435,11 +429,208 @@ ipcMain.on('export-db-to-json', (event) => {
     });
 });
 
+ipcMain.on('start-blink', (event, imagePaths) => {
+    const scriptName = process.env.NODE_ENV === 'development' ? 'blink.py' : 'blink'; // Nom du script avec extension pour le développement
+    const scriptPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, './python', './blink', scriptName);
 
-process.env.APP_ROOT_PATH = path.join(__dirname, '..');
+    exec(`"${scriptPath}" ${imagePaths.join(' ')}`, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Erreur lors de l'exécution du script: ${error}`);
+            event.reply('blink-error', error.message);
+
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Erreur',
+                message: `Erreur lors de l'exécution du script: ${error.message}`
+            });
+            return;
+
+        }
+
+        console.log(`stdout: ${stdout}`);
+        console.error(`stderr: ${stderr}`);
+    });
+});
+
+// Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
+ipcMain.on('open-fit-file', (event, imagePath) => {
+
+    const scriptName = process.env.NODE_ENV === 'development' ? 'open_image.py' : 'open_image';
+    const scriptPath = process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, scriptName)
+        : path.join(process.resourcesPath, './python', './open_image', scriptName);
+
+    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
+
+        if (error) {
+            console.error(`Erreur lors de l'exécution du script Python : ${error}`);
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Erreur',
+                message: `Erreur lors de l'exécution du script: ${error.message}`
+            });
+            return;
+        }
+
+        console.log(`Résultat : ${stdout}`);
+        console.log(`Error : ${stderr}`);
+        // Traitement supplémentaire si nécessaire
+    });
+});
+
+// Gestionnaire d'événements pour l'événement "open-in-finder" envoyé depuis le processus de rendu
+ipcMain.on('open-in-finder', (event, filePath) => {
+    shell.showItemInFolder(filePath);
+});
+
+// Export image in JPG
+ipcMain.on('export-image', async (event, filePath) => {
+    console.log("Reçu export-image", filePath);
+
+    try {
+        const { filePath: savePath } = await dialog.showSaveDialog({
+            title: 'Exporter l\'image',
+            defaultPath: path.basename(filePath, path.extname(filePath)) + '.jpeg',
+            filters: [{ name: 'Images', extensions: ['jpeg'] }]
+        });
+
+        if (!savePath) {
+            event.reply('export-image-cancelled');
+            return;
+        }
+
+        const scriptName = process.env.NODE_ENV === 'development' ? 'export-convert.py' : 'export-convert';
+        const scriptPath = process.env.NODE_ENV === 'development'
+            ? path.join(__dirname, scriptName)
+            : path.join(process.resourcesPath, './python', './export-convert', scriptName);
+
+        exec(`"${scriptPath}" "${filePath}" "${savePath}"`, (error, stdout, stderr) => {
+            if (error || stderr) {
+                console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
+                dialog.showErrorBox('Erreur d\'exportation', 'Une erreur est survenue lors de l\'exportation de l\'image.');
+                event.reply('export-image-failure', error ? error.message : stderr);
+                return;
+            }
+
+            console.log('Image convertie avec succès:', stdout);
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'Exportation réussie',
+                message: 'L\'image a été exportée avec succès.',
+            });
+            event.reply('export-image-success', savePath);
+        });
+    } catch (error) {
+        console.error('Erreur lors de l\'ouverture du dialogue de sauvegarde:', error);
+        dialog.showErrorBox('Erreur de dialogue', 'Une erreur est survenue lors de l\'ouverture du dialogue de sauvegarde.');
+        event.reply('export-image-failure', error.message);
+    }
+});
+
+// Resize Windows app after Login
+ipcMain.on('resize-window', (event, targetWidth, targetHeight) => {
+    const win = BrowserWindow.getFocusedWindow();
+    if (win) {
+        let width = win.getBounds().width;
+        let height = win.getBounds().height;
+
+        const widthIncrement = (targetWidth - width) / 20; // 20 est le nombre d'étapes pour l'animation
+        const heightIncrement = (targetHeight - height) / 20;
+
+        const interval = setInterval(() => {
+            width += widthIncrement;
+            height += heightIncrement;
+
+            win.setSize(Math.round(width), Math.round(height));
+
+            if (Math.round(width) === targetWidth && Math.round(height) === targetHeight) {
+                clearInterval(interval);
+            }
+        }, 10); // 20 ms pour chaque étape de l'animation
+    }
+});
+
+// Gestionnaire d'événements pour l'événement "open-default-app" envoyé depuis le processus de rendu
+ipcMain.on('open-default-app', (event, filePath) => {
+    shell.openPath(filePath).then((response) => {
+        if (response) {
+            console.error(`Erreur lors de l'ouverture du fichier : ${response}`);
+            dialog.showMessageBox({
+                type: 'error',
+                title: 'Error',
+                message: `Error: ${response}`
+            });
+        } else {
+            console.log(`Fichier ouvert avec succès : ${filePath}`);
+        }
+    });
+});
+
+// Converter Raw
+ipcMain.on('convert-raw', (event, imagePath) => {
+    let basePath;
+    if (process.env.NODE_ENV === 'development') {
+        // basePath est un chemin relatif depuis le dossier de travail actuel en développement
+        basePath = path.join(__dirname, 'meridio', '..');
+    } else {
+        // basePath est le chemin des ressources de l'application en production
+        basePath = process.resourcesPath;
+    }
+
+    const outputImagePath = path.join(basePath, 'assets', 'image.svg');
 
 
+    // Mettre à jour la base de données directement sans conversion réelle
+    db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [outputImagePath, imagePath], function (err) {
+        if (err) {
+            console.error('Erreur lors de la mise à jour de la base de données', err);
+            event.sender.send('db-update-error', { imagePath, error: err.message });
+            return;
+        }
 
+        console.log(`Base de données mise à jour avec succès pour : ${imagePath}`);
+        event.sender.send('conversion-done', { imagePath, convertedPath: outputImagePath });
+    });
+});
+
+// Converter Tiff
+ipcMain.on('convert-tif', (event, imagePath) => {
+    console.log(`Début de la conversion du fichier TIFF : ${imagePath}`);
+
+    const outputImagePath = path.join(convertedImagesPath, path.basename(imagePath).replace('.tif', '.webp'));
+
+    console.log(`Image de sortie sera enregistrée sous : ${outputImagePath}`);
+
+    const maxSize = 200; // Taille maximale pour la largeur ou la hauteur
+
+    const convertCommand = `convert "${imagePath}" -resize ${maxSize}x${maxSize} -format webp "${outputImagePath}"`;
+
+    exec(convertCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error('Erreur de conversion', error);
+            event.sender.send('conversion-error', { imagePath, error: error.message });
+            return;
+        }
+
+        console.log(`Conversion réussie pour : ${imagePath}`);
+
+        // Mise à jour de la base de données avec le chemin de l'image convertie
+        db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [outputImagePath, imagePath], function (err) {
+            if (err) {
+                console.error('Erreur lors de la mise à jour de la base de données', err);
+                event.sender.send('db-update-error', { imagePath, error: err.message });
+                return;
+            }
+
+            console.log(`Base de données mise à jour avec succès pour : ${imagePath}`);
+            event.sender.send('conversion-done', { imagePath, convertedPath: outputImagePath });
+        });
+    });
+});
+
+// Converter Fit
 ipcMain.on('convert-fit', (event, imagePath) => {
 
     // Déterminer le chemin de sortie dans le dossier 'convertedImage'
@@ -484,203 +675,9 @@ ipcMain.on('convert-fit', (event, imagePath) => {
                 // Vous pouvez choisir de notifier l'interface utilisateur de cette erreur
                 return;
             }
-
             // Répondre au frontend que la conversion est terminée et que la DB est mise à jour
             event.reply('conversion-done', { imagePath: imagePath, convertedPath: convertedPath });
         });
     });
 });
 
-
-
-ipcMain.on('start-blink', (event, imagePaths) => {
-    const scriptName = process.env.NODE_ENV === 'development' ? 'blink.py' : 'blink'; // Nom du script avec extension pour le développement
-    const scriptPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './python', './blink', scriptName);
-
-    exec(`"${scriptPath}" ${imagePaths.join(' ')}`, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Erreur lors de l'exécution du script: ${error}`);
-            event.reply('blink-error', error.message);
-
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Erreur',
-                message: `Erreur lors de l'exécution du script: ${error.message}`
-            });
-            return;
-
-        }
-
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
-    });
-});
-
-
-
-
-
-// Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
-ipcMain.on('open-fit-file', (event, imagePath) => {
-
-    const scriptName = process.env.NODE_ENV === 'development' ? 'open_image.py' : 'open_image';
-    const scriptPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './python', './open_image', scriptName);
-
-    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
-
-        if (error) {
-            console.error(`Erreur lors de l'exécution du script Python : ${error}`);
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Erreur',
-                message: `Erreur lors de l'exécution du script: ${error.message}`
-            });
-            return;
-        }
-
-        console.log(`Résultat : ${stdout}`);
-        console.log(`Error : ${stderr}`);
-        // Traitement supplémentaire si nécessaire
-    });
-});
-
-
-
-// Gestionnaire d'événements pour l'événement "open-in-finder" envoyé depuis le processus de rendu
-ipcMain.on('open-in-finder', (event, filePath) => {
-    shell.showItemInFolder(filePath);
-});
-
-
-
-// Gestionnaire d'événements pour l'événement "export-image" envoyé depuis le processus de rendu
-ipcMain.on('export-image', async (event, filePath) => {
-    console.log("Reçu export-image", filePath);
-
-    try {
-        const { filePath: savePath } = await dialog.showSaveDialog({
-            title: 'Exporter l\'image',
-            defaultPath: path.basename(filePath, path.extname(filePath)) + '.jpeg',
-            filters: [{ name: 'Images', extensions: ['jpeg'] }]
-        });
-
-        if (!savePath) {
-            event.reply('export-image-cancelled');
-            return;
-        }
-
-        const scriptName = process.env.NODE_ENV === 'development' ? 'export-convert.py' : 'export-convert';
-        const scriptPath = process.env.NODE_ENV === 'development'
-            ? path.join(__dirname, scriptName)
-            : path.join(process.resourcesPath, './python', './export-convert', scriptName);
-
-        exec(`"${scriptPath}" "${filePath}" "${savePath}"`, (error, stdout, stderr) => {
-            if (error || stderr) {
-                console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
-                dialog.showErrorBox('Erreur d\'exportation', 'Une erreur est survenue lors de l\'exportation de l\'image.');
-                event.reply('export-image-failure', error ? error.message : stderr);
-                return;
-            }
-
-            console.log('Image convertie avec succès:', stdout);
-            dialog.showMessageBox({
-                type: 'info',
-                title: 'Exportation réussie',
-                message: 'L\'image a été exportée avec succès.',
-            });
-            event.reply('export-image-success', savePath);
-        });
-    } catch (error) {
-        console.error('Erreur lors de l\'ouverture du dialogue de sauvegarde:', error);
-        dialog.showErrorBox('Erreur de dialogue', 'Une erreur est survenue lors de l\'ouverture du dialogue de sauvegarde.');
-        event.reply('export-image-failure', error.message);
-    }
-});
-
-
-
-ipcMain.on('resize-window', (event, targetWidth, targetHeight) => {
-    const win = BrowserWindow.getFocusedWindow();
-    if (win) {
-        let width = win.getBounds().width;
-        let height = win.getBounds().height;
-
-        const widthIncrement = (targetWidth - width) / 20; // 20 est le nombre d'étapes pour l'animation
-        const heightIncrement = (targetHeight - height) / 20;
-
-        const interval = setInterval(() => {
-            width += widthIncrement;
-            height += heightIncrement;
-
-            win.setSize(Math.round(width), Math.round(height));
-
-            if (Math.round(width) === targetWidth && Math.round(height) === targetHeight) {
-                clearInterval(interval);
-            }
-        }, 10); // 20 ms pour chaque étape de l'animation
-    }
-});
-
-
-ipcMain.on('convert-tif', (event, imagePath) => {
-    console.log(`Début de la conversion du fichier TIFF : ${imagePath}`);
-
-
-    const outputImagePath = path.join(convertedImagesPath, path.basename(imagePath).replace('.tif', '.webp'));
-
-    console.log(`Image de sortie sera enregistrée sous : ${outputImagePath}`);
-
-    const maxSize = 200; // Taille maximale pour la largeur ou la hauteur
-
-    sharp(imagePath)
-        .resize({
-            width: maxSize,
-            height: maxSize,
-            fit: sharp.fit.inside,
-            withoutEnlargement: true
-        }) // Redimensionner avec la taille maximale
-        .toFormat('webp') // Convertir en WebP
-        .toFile(outputImagePath)
-        .then(() => {
-            console.log(`Conversion réussie pour : ${imagePath}`);
-
-            // Mise à jour de la base de données avec le chemin de l'image convertie
-            db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [outputImagePath, imagePath], function (err) {
-                if (err) {
-                    console.error('Erreur lors de la mise à jour de la base de données', err);
-                    event.sender.send('db-update-error', { imagePath, error: err.message });
-                    return;
-                }
-
-                console.log(`Base de données mise à jour avec succès pour : ${imagePath}`);
-                event.sender.send('conversion-and-db-update-done', { imagePath, convertedPath: outputImagePath });
-            });
-        })
-        .catch(err => {
-            console.error('Erreur de conversion', err);
-            event.sender.send('conversion-error', { imagePath, error: err.message });
-        });
-});
-
-
-
-
-// Gestionnaire d'événements pour l'événement "open-default-app" envoyé depuis le processus de rendu
-ipcMain.on('open-default-app', (event, filePath) => {
-    shell.openPath(filePath).then((response) => {
-        if (response) {
-            console.error(`Erreur lors de l'ouverture du fichier : ${response}`);
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Error',
-                message: `Error: ${response}`
-            });
-        } else {
-            console.log(`Fichier ouvert avec succès : ${filePath}`);
-        }
-    });
-});
