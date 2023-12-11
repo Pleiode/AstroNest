@@ -1,45 +1,49 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import sys
 import numpy as np
-import matplotlib
-matplotlib.use('TkAgg')  # Utiliser le backend TkAgg pour l'interactivité
 import matplotlib.pyplot as plt
 from astropy.io import fits
 import matplotlib.widgets as widgets
-import sys
+import matplotlib
+matplotlib.use('TkAgg')
+
+
+# Définir les paramètres par défaut
+PERCENTILE_MIN = 98
+PERCENTILE_MAX = 100
+PERCENTILE_INIT = 99.5
 
 def adjust_grayscale(image_data, upper_percentile):
     """ Ajuste l'échelle des gris en fonction du percentile supérieur spécifié. """
     upper_bound = np.percentile(image_data, upper_percentile)
-    scaled_data = np.clip(image_data, 0, upper_bound)
-    scaled_data = scaled_data / upper_bound * 255
-    return scaled_data.astype(np.uint8)
+    return np.clip(image_data, 0, upper_bound) / upper_bound * 255
 
 def display_fit_image(file_path):
     """ Affiche une image FITS avec un curseur pour ajuster le percentile supérieur. """
-    with fits.open(file_path) as hdul:
-        image_data = hdul[0].data
+    try:
+        with fits.open(file_path) as hdul:
+            image_data = hdul[0].data
+    except Exception as e:
+        print(f"Erreur lors de la lecture du fichier FITS : {e}")
+        return
 
     height, width = image_data.shape
-    fig_ratio = width / height
-    fig, ax = plt.subplots(figsize=(8 * fig_ratio, 8))
-
+    fig, ax = plt.subplots(figsize=(8, 8 * height / width))
     plt.subplots_adjust(left=0, right=1, bottom=0.15, top=1)
 
     img_plot = ax.imshow(image_data, cmap='gray', norm=plt.Normalize())
     ax.axis('off')
 
     # Curseur pour le percentile supérieur
-    slider_height = 0.03
-    ax_upper = plt.axes([0.25, 0.05, 0.65, slider_height], facecolor='lightgoldenrodyellow')
-
-    slider_upper = widgets.Slider(ax=ax_upper, label='Percentile Supérieur', valmin=95, valmax=100, valinit=99.5, facecolor='blue', alpha=0.6)
+    ax_upper = plt.axes([0.25, 0.05, 0.65, 0.03], facecolor='lightgoldenrodyellow')
+    slider_upper = widgets.Slider(ax=ax_upper, label='Percentile Supérieur', 
+                                  valmin=PERCENTILE_MIN, valmax=PERCENTILE_MAX, 
+                                  valinit=PERCENTILE_INIT, facecolor='blue')
 
     def update(val):
-        upper_percentile = slider_upper.val
-        scaled_data = adjust_grayscale(image_data, upper_percentile)
-        img_plot.set_data(scaled_data)
+        img_plot.set_data(adjust_grayscale(image_data, slider_upper.val))
         img_plot.autoscale()
         fig.canvas.draw_idle()
 
@@ -52,7 +56,6 @@ def display_fit_image(file_path):
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-        display_fit_image(file_path)
+        display_fit_image(sys.argv[1])
     else:
         print("Veuillez fournir un chemin de fichier FITS.")

@@ -85,6 +85,7 @@
     "electron-rebuild": "^3.2.9",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "style-loader": "^3.3.3",
+    "svg-url-loader": "^8.0.0",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1"

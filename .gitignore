@@ -14,6 +14,13 @@
 /python
 /dist/bundle.js
 
+# firebase
+firebase.js
+.firebaserc
+firebase.json
+firestore.indexes.json
+firestore.rules
+
 # misc
 .DS_Store
 .env.local

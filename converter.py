@@ -8,9 +8,14 @@ import numpy as np
 from astropy.io import fits
 from PIL import Image
 
+# Constantes pour les valeurs par défaut
+MAX_SIZE_DEFAULT = 200
+CONTRAST_DEFAULT = 1.0
+BIAS_DEFAULT = 0.0
+
 semaphore = asyncio.Semaphore(10)  # Limite de 10 tâches simultanées
 
-async def normalize_data(data, loop):
+async def normalize_data(data):
     def normalize_sync(data):
         percentile_low, percentile_high = np.percentile(data, [2, 98])
         data_clipped = np.clip(data, percentile_low, percentile_high)
@@ -18,63 +23,51 @@ async def normalize_data(data, loop):
         data_max = data_clipped.max()
         return ((data_clipped - data_min) / (data_max - data_min) * 255).astype(np.uint8)
 
-    return await loop.run_in_executor(None, normalize_sync, data)
+    return await asyncio.to_thread(normalize_sync, data)
 
-def adjust_contrast_bias(data, contrast=1.0, bias=0.0):
+def adjust_contrast_bias(data, contrast=CONTRAST_DEFAULT, bias=BIAS_DEFAULT):
     return np.clip(255 * contrast * (data / 255 - 0.5) + 0.5 + bias, 0, 255).astype(np.uint8)
 
-async def convert_fits_to_webp(input_path, output_path, max_size=200, loop=None):
-    async with semaphore:
-        if not os.path.exists(input_path):
-            print(f"Le fichier {input_path} n'existe pas.")
-            return
-
-        try:
-            data = fits.getdata(input_path)
-        except Exception as e:
-            print(f"Erreur lors de la lecture du fichier FITS: {e}")
-            return
-
-        normalized_data = await normalize_data(data, loop)
-        contrast_value = 1.0
-        bias_value = 0.0
-        adjusted_data = adjust_contrast_bias(normalized_data, contrast=contrast_value, bias=bias_value)
-
-        image = Image.fromarray(adjusted_data, 'L')
-        resize_and_save_image(image, output_path, max_size)
-        print(output_path)
-
-async def convert_tif_to_webp(input_path, output_path, max_size=200, loop=None):
-    async with semaphore:
-        if not os.path.exists(input_path):
-            print(f"Le fichier {input_path} n'existe pas.")
-            return
-
-        try:
-            image = Image.open(input_path)
-        except Exception as e:
-            print(f"Erreur lors de la lecture du fichier TIF: {e}")
-            return
-
-        resize_and_save_image(image, output_path, max_size)
-        print(output_path)
+def convert_to_webp(input_path, output_path):
+    with Image.open(input_path) as img:
+        img.save(output_path, 'WEBP', lossless=True)
 
 def resize_and_save_image(image, output_path, max_size):
     width, height = image.size
     scale = min(max_size / height, max_size / width)
     if scale < 1:
         image = image.resize((int(width * scale), int(height * scale)), Image.Resampling.LANCZOS)
+    image.save(output_path, 'WEBP', lossless=True)
 
-    image.save(output_path, 'WEBP')
+async def convert_image(input_path, output_path, max_size=MAX_SIZE_DEFAULT, is_fits=False):
+    async with semaphore:
+        if not os.path.exists(input_path):
+            print(f"Le fichier {input_path} n'existe pas.")
+            return
+
+        try:
+            data = fits.getdata(input_path) if is_fits else Image.open(input_path)
+            if is_fits:
+                data = await normalize_data(data)
+                data = adjust_contrast_bias(data)
+                image = Image.fromarray(data, 'L')
+            else:
+                image = data
+            resize_and_save_image(image, output_path, max_size)
+        except Exception as e:
+            print(f"Erreur lors de la lecture du fichier: {e}")
+            return
+
+        print(output_path)
 
 async def process_files(file_paths, output_paths):
-    loop = asyncio.get_running_loop()
     tasks = []
     for input_path, output_path in zip(file_paths, output_paths):
-        if input_path.lower().endswith('.fit') or input_path.lower().endswith('.fits'):
-            task = asyncio.create_task(convert_fits_to_webp(input_path, output_path, loop=loop))
-        elif input_path.lower().endswith('.tif') or input_path.lower().endswith('.tiff'):
-            task = asyncio.create_task(convert_tif_to_webp(input_path, output_path, loop=loop))
+        is_fits = input_path.lower().endswith(('.fit', '.fits'))
+        is_tiff = input_path.lower().endswith(('.tif', '.tiff'))
+
+        if is_fits or is_tiff:
+            task = asyncio.create_task(convert_image(input_path, output_path, is_fits=is_fits))
         else:
             print(f"Format non pris en charge : {input_path}")
             continue

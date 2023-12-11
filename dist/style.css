@@ -5,7 +5,7 @@
 :root {
     --bg-color: #191919;
     --color-nav: #262626;
-    --white: #cfcfcf;
+    --white: #ededed;
     --grey10: #454545;
     /* Removed duplicate --grey10 declaration for cleaner code */
     --grey20: #484848;
@@ -37,11 +37,12 @@ body {
     font-family: 'Roboto', sans-serif;
     /* Adding a sans-serif fallback */
     color: var(--white);
+    user-select: none;
 }
 
 /* Paragraph styling with color and margin for block elements */
 p {
-    color: var(--white);
+    color: #CECECE;
     margin-block: 8px;
     font-size: 14px;
 }
@@ -158,7 +159,7 @@ button {
 a {
     color: var(--white);
     -webkit-app-region: no-drag;
-} 
+}
 
 button.primary {
     border: 1px solid #5250E1;
@@ -177,17 +178,19 @@ button.special {
     gap: 6px;
     border-radius: 6px;
     border: none;
-    font-size: 12px;
+    font-size: 14px;
     background-color: var(--greyborder);
     font-weight: 400;
     color: white;
     border: 1px solid #484848;
+
 }
 
 button.special.inactive {
     filter: grayscale(1);
     opacity: 0.5;
     cursor: default;
+    z-index: 1;
 }
 
 button.tertiary {
@@ -195,7 +198,9 @@ button.tertiary {
     padding: 0;
     border: unset;
 }
+         
 
+ 
 button:hover {
     transition: 0.2s;
     filter: brightness(1.2);
@@ -268,6 +273,7 @@ input:focus {
     filter: brightness(1.2);
     transition: 0.2s;
     border: #7a78db solid 1px;
+    
 }
 
 /* Upload input styling */
@@ -506,7 +512,7 @@ ul {
 
 /* Focus image style with border and rounded corners */
 .focus-image {
-    border: var(--blue10) 1px solid;
+    border: var(--blue10) 1px dashed;
 
     opacity: 0.7;
     box-sizing: border-box;
@@ -666,6 +672,10 @@ ul {
     padding-block: 16px;
 }
 
+.section-details h4 {
+    margin: 0;
+}
+
 
 /* Button styling */
 .button {
@@ -821,12 +831,25 @@ ul {
     width: 130px;
     height: 100px;
     background-color: var(--grey20);
-    animation: skeleton-loading 1s linear infinite alternate;
+    animation: skeleton-loading 1s linear infinite alternate, skeleton-appear 0.2s ease-in-out;
     border-radius: 3px;
 }
 
 
+
+@keyframes skeleton-appear {
+    0% {
+        scale: 0;
+    }
+
+    100% {
+        scale: 1;
+    }
+}
+
+
 @keyframes skeleton-loading {
+
     0% {
         background-color: var(--color-nav);
     }
@@ -834,6 +857,8 @@ ul {
     100% {
         background-color: var(--grey10);
     }
+
+
 }
 
 
@@ -880,3 +905,111 @@ ul {
     background-size: cover;
 }
 
+.no-images {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.no-images p {
+    color: #959595;
+}
+
+
+.notification {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    border-radius: 3px;
+    display: flex;
+    box-shadow: 0px 2px 6px 0px rgba(0, 0, 18, 0.32);
+    -webkit-animation: slide-in-left 0.3s ease-in-out both;
+    animation: slide-in-left 0.3s ease-in-out both;
+}
+
+
+.notification p {
+    padding-inline: 12px;
+}
+
+
+.notification .info {
+    display: flex;
+    justify-content: center;
+    padding: 6px;
+}
+
+
+.close-icon {
+    background-color: var(--bg-color);
+}
+
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    z-index: 5;
+    
+
+}
+
+.tooltip .tooltip-text {
+    z-index: 1;
+    visibility: hidden;
+    width: 120px;
+    background-color: var(--color-nav);
+    color: var(--white);
+    text-align: center;
+    border-radius: 6px;
+    padding: 10px;
+    position: absolute;
+    left: 100%;
+    /* Position to the right of the parent */
+    margin-left: 10px;
+    /* Add some space between the tooltip and the parent */
+    top: 150%;
+    transform: translateX(-60%);
+    z-index: 5;
+    font-size: 12px;
+    box-shadow: 0px 4px 12px 0px rgba(0, 0, 18, 0.32);
+ 
+}
+
+.tooltip:hover .tooltip-text {
+    visibility: visible;
+  
+}
+
+
+
+@-webkit-keyframes slide-in-left {
+    0% {
+        -webkit-transform: translateX(-1000px);
+        transform: translateX(-1000px);
+        opacity: 0;
+    }
+
+    100% {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-in-left {
+    0% {
+        -webkit-transform: translateX(-1000px);
+        transform: translateX(-1000px);
+        opacity: 0;
+    }
+
+    100% {
+        -webkit-transform: translateX(0);
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

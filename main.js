@@ -430,6 +430,7 @@ ipcMain.on('export-db-to-json', (event) => {
     });
 });
 
+
 ipcMain.on('start-blink', (event, imagePaths) => {
     const scriptName = process.env.NODE_ENV === 'development' ? 'blink.py' : 'blink'; // Nom du script avec extension pour le développement
     const scriptPath = process.env.NODE_ENV === 'development'
@@ -453,10 +454,16 @@ ipcMain.on('start-blink', (event, imagePaths) => {
 
         }
 
+        const convertedPaths = stdout.trim().split('\n');
+        event.sender.send('images-converted', convertedPaths);
+
+        
         console.log(`stdout: ${stdout}`);
         console.error(`stderr: ${stderr}`);
     });
 });
+
+
 
 // Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
 ipcMain.on('open-fit-file', (event, imagePath) => {
