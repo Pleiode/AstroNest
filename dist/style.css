@@ -61,12 +61,11 @@ h2 {
 }
 
 h4 {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 400;
     margin-block-start: 0;
     margin-block-end: 8px;
     color: var(--white);
-    text-transform: uppercase;
 }
 
 /* Navbar styling with a fixed height and vertical layout */
@@ -1012,4 +1011,71 @@ ul {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+
+.image-container {
+    position: relative;
+    display: inline-block; /* Ou un autre display selon la mise en page */
+    box-sizing: border-box; /* Inclut padding et border dans la taille totale */
+    /* Ajustez les valeurs suivantes selon vos besoins */
+    width: auto; /* ou une valeur spécifique si nécessaire */
+    height: auto; /* ou une valeur spécifique si nécessaire */
+    
+}
+
+
+.image-checkbox {
+    appearance: none; /* Supprime l'apparence par défaut */
+    width: 24px; /* Taille de la checkbox */
+    height: 24px; /* Taille de la checkbox */
+    border-radius: 50%; /* Rend la checkbox ronde */
+    border: 1px solid #555; /* Bordure de la checkbox */
+    position: absolute;
+    top: 8px; /* Ajuster en fonction de la taille de l'image */
+    right: 8px; /* Ajuster en fonction de la taille de l'image */
+    opacity: 0;
+    pointer-events: none; /* Empêche la checkbox d'interférer avec les événements de la souris sur l'image */
+}
+
+.image-checkbox:checked {
+    background-color: #8D47FF; /* Couleur de fond lorsque la checkbox est cochée */
+    border: none; /* Optionnel : retirez la bordure lorsqu'elle est cochée */
+}
+
+.image-checkbox:checked::after {
+    content: url('data:image/svg+xml;utf8,<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z" fill="white" stroke="white" stroke-width="0.5"/></svg>');
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 20px; /* Taille du SVG */
+    width: 20px; /* Taille du SVG */
+}
+
+
+.image-container:hover .image-checkbox,
+.image-container.selected .image-checkbox {
+    opacity: 1;
+    pointer-events: auto; /* Restaure les événements de la souris pour la checkbox */
+}
+
+
+img {
+    display: block; /* Élimine tout espace blanc sous l'image */
+    max-width: 100%; /* Assure que l'image ne dépasse pas son conteneur */
+    height: auto; /* Garde le rapport hauteur/largeur original de l'image */
+    transition: 0.1s ease-in-out;
+    box-sizing: border-box;
+}
+
+.image-container.selected img {
+    scale: 0.8;
+    transition: 0.1s ease-in-out;
+    box-sizing: border-box;
+}
+
+.image-container.selected {
+    box-sizing: border-box;
+    background-color: #8d47ff0f;
 }

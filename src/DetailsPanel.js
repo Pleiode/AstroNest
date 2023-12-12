@@ -48,6 +48,15 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
 
 
     const handleDelete = ids => {
+
+        if (!localStorage.getItem('firstDelete')) {
+            alert(
+                "Rassurez-vous, la photo n'est pas supprimée de votre ordinateur, mais juste d'AstroNest :)"
+            );
+            localStorage.setItem('firstDelete', 'true');
+        }
+
+
         console.log(ids); // Vérifiez ce que contient ids
         ids.forEach(id => window.electron.ipcRenderer.send("delete-image", id));
     };
@@ -806,10 +815,10 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 <div className='separator'></div>
 
 
-                                <div className='section-details' >
+                                <div style={{backgroundColor:'#8D47FF1A'}} className='section-details' >
                                     <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
 
-                                        <p>Sélection multiple</p>
+                                        <h4 style={{color: '#E4D3FF'}} >{selectedImages.length} photo(s) sélectionnée(s)</h4>
 
                                     </div>
                                 </div>

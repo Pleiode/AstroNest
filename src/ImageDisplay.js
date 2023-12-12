@@ -3,23 +3,15 @@ import { format, parse } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Notification from './notification';
 
-const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate }) => {
+const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate, setSelectedImages }) => {
 
 
     const [convertedImages, setConvertedImages] = useState({});
     const [loadingImages, setLoadingImages] = useState({});
-    const [selectedImage, setSelectedImage] = useState(null);
     const [showNotification, setShowNotification] = useState(false);
 
-    const [scale, setScale] = useState(1);
-    const [position, setPosition] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [startPos, setStartPos] = useState({ x: 0, y: 0 });
     const [imageLimit, setImageLimit] = useState(100); // Limite initiale de 50 images
 
-
-    const minScale = 0.5; // Valeur minimale de zoom
-    const maxScale = 10;   // Valeur maximale de zoom
 
 
     const convertImage = (imagePath) => {
@@ -124,58 +116,49 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
     const renderImage = (image) => {
         const isImageLoading = loadingImages[image.path];
+        const isSelectedClass = isSelected(image) ? 'selected' : '';
 
         return isImageLoading ? (
             <div className="skeleton"></div>
         ) : (
-            <img
-                loading='lazy'
-                onClick={(e) => handleImageClick(image, e)}
-                onDoubleClick={() => handleImageDoubleClick(image)}
-                key={image.id}
-                src={getImageSrc(image)}
-                alt={`Image de ${image.name}`}
-                className={isSelected(image) ? 'focus-image' : ''}
-                style={{ width: 'auto', height: '100px' }}
-            />
+            <div className={`image-container ${isSelectedClass}`} onClick={(e) => handleImageClick(image, e)}>
+                <img
+                    loading='lazy'
+                    onDoubleClick={() => handleImageDoubleClick(image)}
+                    key={image.id}
+                    src={getImageSrc(image)}
+                    alt={`Image de ${image.name}`}
+                    style={{ width: 'auto', height: '100px' }}
+                />
+               
+                <input
+                    type="checkbox"
+                    className="image-checkbox round-checkbox"
+                    checked={isSelected(image)}
+                    onChange={(e) => handleCheckboxChange(image, e)}
+                    onClick={(e) => e.stopPropagation()}
+                />
+            </div>
         );
     };
 
 
-
-
-    const handleWheel = (e) => {
-        const zoomFactor = 0.1;
-        let newScale = scale;
-
-        if (e.deltaY < 0) {
-            newScale = Math.min(scale + zoomFactor, maxScale); // Zoom in
-        } else {
-            newScale = Math.max(scale - zoomFactor, minScale); // Zoom out
-        }
-
-        setScale(newScale);
+    const handleCheckboxChange = (image, event) => {
+        // Gérer le changement de la case à cocher
+        setSelectedImages(prevImages => {
+            if (event.target.checked) {
+                return [...prevImages, image];
+            } else {
+                return prevImages.filter(selected => selected.id !== image.id);
+            }
+        });
     };
 
-    const handleMouseDown = (e) => {
-        e.preventDefault();
-        setStartPos({ x: e.clientX - position.x, y: e.clientY - position.y });
-        setIsDragging(true);
-    };
 
-    const handleMouseMove = (e) => {
-        if (isDragging) {
-            const newX = e.clientX - startPos.x;
-            const newY = e.clientY - startPos.y;
-            setPosition({ x: newX, y: newY });
-        }
-    };
 
-    const handleMouseUp = () => {
-        setIsDragging(false);
-    };
 
     const containerRef = useRef(null); // Référence au conteneur
+
 
     const handleScroll = () => {
         const container = containerRef.current;
@@ -198,7 +181,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
 
 
-    
+
 
     return (
         <div className="container" ref={containerRef}>

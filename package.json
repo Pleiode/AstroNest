@@ -1,5 +1,5 @@
 {
-  "name": "meridio",
+  "name": "astronest",
   "version": "1.0.0",
   "description": "Une brève description de votre application",
   "main": "main.js",
@@ -15,6 +15,7 @@
     "rebuild": "electron-rebuild"
   },
   "build": {
+    "productName": "AstroNest",
     "directories": {
       "output": "build"
     },

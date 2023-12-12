@@ -61,24 +61,40 @@ const Container = () => {
         return selectedImages.some(selected => image.id === selected.id);
     };
 
+
     const handleImageClick = (image, event) => {
         if (event.ctrlKey || event.metaKey) {
+            // Gérer la sélection multiple avec Ctrl ou Meta (Cmd) + clic
             setSelectedImages(prevImages => {
                 if (isSelected(image)) {
-
                     return prevImages.filter(selected => selected.id !== image.id);
                 } else {
                     return [...prevImages, image];
                 }
             });
         } else {
+            // Sélectionner uniquement l'image cliquée
             setSelectedImages([image]);
         }
-        setShowDetailsPanel(true);
     };
 
 
+
+
+
     useEffect(() => {
+
+        if (!localStorage.getItem('firstLaunch')) {
+            alert(
+                "Bienvenue dans la version bêta de notre application !\n\n" +
+                "Sachez que des bugs et des problèmes peuvent survenir. Vos retours et suggestions sont précieux pour nous aider à améliorer l'expérience.\n\n" +
+                "Pendant cette phase de test, nous ne pouvons être tenus responsables des pertes de données.\n\n" +
+                "Merci de votre compréhension et de votre soutien !"
+            );
+            localStorage.setItem('firstLaunch', 'true');
+        }
+
+
         // Check local storage on component mount
         const hasEdited = localStorage.getItem("hasEdited");
         if (hasEdited) {
@@ -515,6 +531,8 @@ const Container = () => {
                         handleImageClick={handleImageClick}
                         isSelected={isSelected}
                         formatDate={formatDate}
+                        setSelectedImages={setSelectedImages}
+
                     />
 
                 </div>

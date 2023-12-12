@@ -15,6 +15,10 @@ const App = () => {
 
 
   useEffect(() => {
+
+ 
+
+
     const premiumStatus = localStorage.getItem('isPremium') === 'true';
     setIsPremium(premiumStatus);
 
