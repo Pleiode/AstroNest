@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from 'react-router-dom';
-import { Image as ImageIcon, Trash as TrashIcon, Download, Upload } from 'react-feather';
+import { Image as ImageIcon, Upload } from 'react-feather';
 
 
 
@@ -30,7 +30,7 @@ function Navbar() {
           <li>
             <Link to="/" className={`nav-link ${pathname === "/" ? 'active' : ''}`}>
               <ImageIcon className='navbar-icon' />
-              Photo Library
+              Photos
             </Link>
           </li>
 
@@ -49,7 +49,7 @@ function Navbar() {
 
         <button className="btn-export" onClick={exportDatabase}>
           <Upload strokeWidth={2} width={'16px'} />
-          Exporter JSON
+          Exporter base de donnée
         </button>
       </div>
 

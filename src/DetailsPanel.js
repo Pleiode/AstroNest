@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { Trash, Archive, Share, Info } from 'react-feather';
+import { Trash, Archive, Share } from 'react-feather';
 import Notification from './notification';
 
 
 
-const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChange, formatDate, handlePathFileChange, selectedImages }) => {
+const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChange, formatDate, handlePathFileChange, selectedImages, width }) => {
 
     const [showNotification, setShowNotification] = useState(false);
 
@@ -242,7 +242,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
     return (
         <>
 
-            <div className="details-section" >
+            <div style={{ width: `${width}px` }} className="details-section" >
 
 
 
@@ -254,9 +254,9 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                 ) : selectedImages.length === 1 ? (
 
                     <>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }} className='section-details'  >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock:'10px' }} className='section-details'  >
 
-                            <div style={{ display: 'flex', gap: '8px' }} >
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} >
                                 <button
                                     style={{ backgroundColor: '#8532F2', border: 'none' }}
                                     onClick={handleBlink}
@@ -276,6 +276,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                     </svg>
 
                                     Blink
+                                    <span className="tooltip-text">Sélectionnez minimum 2 photos</span>
 
 
                                 </button>
@@ -283,11 +284,14 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
 
                                 <button onClick={() => openInFinder(selectedImage.path)}
                                     className="special"
+
                                 >
                                     <Archive
                                         color="var(--white)"
-                                        size={16} />
+                                        size={18}
+                                        strokeWidth={1.5} />
 
+                                    <span className="tooltip-text">Open source</span>
                                 </button>
 
 
@@ -296,8 +300,10 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 >
                                     <Share
                                         color="var(--white)"
-                                        size={16} />
+                                        size={18}
+                                        strokeWidth={1.5} />
 
+                                    <span className="tooltip-text">Export PNG</span>
                                 </button>
 
                                 <button
@@ -306,7 +312,11 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 >
                                     <Trash
                                         color="var(--white)"
-                                        size={16} />
+                                        size={18}
+                                        strokeWidth={1.5} />
+
+                                    <span className="tooltip-text">Delete</span>
+
 
                                 </button>
                             </div>
@@ -747,7 +757,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                             <div>
 
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }} className='section-details'  >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock:'10px' }} className='section-details'  >
 
                                     <div style={{ display: 'flex', gap: '8px' }} >
                                         <button
@@ -780,7 +790,11 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                         >
                                             <Archive
                                                 color="var(--white)"
-                                                size={16} />
+                                                size={18}
+                                                strokeWidth={1.5}  />
+
+                                            <span className="tooltip-text">Open source</span>
+
                                         </button>
 
 
@@ -791,7 +805,10 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                         >
                                             <Share
                                                 color="var(--white)"
-                                                size={16} />
+                                                size={18}
+                                                strokeWidth={1.5}  />
+
+                                            <span className="tooltip-text">Export PNG</span>
 
                                         </button>
 
@@ -801,7 +818,11 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                         >
                                             <Trash
                                                 color="var(--white)"
-                                                size={16} />
+                                                size={18}
+                                                strokeWidth={1.5}  />
+
+                                            <span className="tooltip-text">Delete</span>
+
                                         </button>
                                     </div>
 
@@ -815,10 +836,10 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                 <div className='separator'></div>
 
 
-                                <div style={{backgroundColor:'#8D47FF1A'}} className='section-details' >
+                                <div style={{ backgroundColor: '#8D47FF1A' }} className='section-details' >
                                     <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
 
-                                        <h4 style={{color: '#E4D3FF'}} >{selectedImages.length} photo(s) sélectionnée(s)</h4>
+                                        <h4 style={{ color: '#E4D3FF' }} >{selectedImages.length} photo(s) sélectionnée(s)</h4>
 
                                     </div>
                                 </div>

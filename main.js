@@ -4,19 +4,20 @@ const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
 const exifParser = require('exif-parser');
-const { exec, spawn } = require('child_process');
 const os = require('os');
 const https = require('https');
 const packageJson = require('./package.json'); // Ajustez le chemin si nécessaire
 const appName = 'Eidos'; // Remplacez par le nom de votre application
 const appFolderPath = path.join(os.homedir(), 'Documents', appName);
 const convertedImagesPath = path.join(appFolderPath, 'convertedImage');
+const thumbnailsPath = path.join(appFolderPath, 'thumbnails');
+
 const dbPath = path.join(appFolderPath, 'Database.db');
-let win;
+
 let db;
 const logFilePath = path.join(app.getPath('userData'), 'backend.log'); // userData est un répertoire approprié pour stocker des données d'application
 process.env.APP_ROOT_PATH = path.join(__dirname, '..');
-
+const { Worker } = require('worker_threads');
 
 
 // Créer le dossier de l'application s'il n'existe pas
@@ -27,6 +28,11 @@ if (!fs.existsSync(appFolderPath)) {
 // Créer le dossier des images converties s'il n'existe pas
 if (!fs.existsSync(convertedImagesPath)) {
     fs.mkdirSync(convertedImagesPath);
+}
+
+// Créer le dossier des images converties s'il n'existe pas
+if (!fs.existsSync(thumbnailsPath)) {
+    fs.mkdirSync(thumbnailsPath);
 }
 
 // Définissez le chemin du fichier de journalisation
@@ -76,7 +82,7 @@ function createWindow() {
     if (isWindows) {
         windowOptions.frame = true; // Utilise la barre de titre native de Windows
     } else if (process.platform === 'darwin') {
-        windowOptions.titleBarStyle = 'hidden';
+        windowOptions.titleBarStyle = 'hiddenInset';
         windowOptions.frame = false; // Pour une barre de titre complètement personnalisée
     }
 
@@ -105,9 +111,9 @@ function checkForUpdates() {
 
     const options = {
         hostname: 'api.github.com',
-        path: '/repos/Pleiode/Meridio/releases/latest',
+        path: '/repos/Pleiode/AstroNest/releases/latest',
         method: 'GET',
-        headers: { 'User-Agent': 'Meridio' }
+        headers: { 'User-Agent': 'AstroNest' }
     };
 
     https.get(options, (res) => {
@@ -143,11 +149,14 @@ function checkForUpdates() {
                         dialog.showMessageBox({
                             type: 'info',
                             title: 'Mise à jour disponible',
-                            message: 'Une nouvelle version de l’application est disponible. Voulez-vous la télécharger et l’installer maintenant ?',
-                            buttons: ['Oui', 'Plus tard']
+                            message: "Nouvelle version disponible. Souhaitez-vous la télécharger maintenant ? l'application se fermera pendant le téléchargement et vous devrez la relancer depuis la nouvelle version téléchargée.",
+                            buttons: ['Quitter et télécharger', 'Plus tard']
                         }).then(result => {
                             if (result.response === 0) {
                                 console.log("L'utilisateur a choisi de télécharger la mise à jour.");
+                                setTimeout(() => {
+                                    app.quit();
+                                }, 1000); // 3000 millisecondes équivalent à 3 secondes
                                 require('electron').shell.openExternal(downloadUrl);
                             } else {
                                 console.log("L'utilisateur a choisi de reporter la mise à jour.");
@@ -189,6 +198,7 @@ function createDatabase() {
         id INTEGER PRIMARY KEY,
         name TEXT,
         convertPath TEXT,
+        thumbnailPath TEXT,
         path TEXT,
         skyObject TEXT,
         objectType TEXT,
@@ -336,27 +346,6 @@ ipcMain.on("update-Type", (event, { imageId, photoType }) => {
     });
 });
 
-// Gestionnaire d'événements pour l'événement "update-image-info" envoyé depuis le processus de rendu
-ipcMain.on("update-image-info", (event, updatedImage) => {
-    // Extrait l'ID et les champs mis à jour de l'objet d'image
-    const { id, ...fields } = updatedImage;
-    const queryParams = Object.values(fields);
-    // Crée la chaîne de requête pour la mise à jour des champs de l'image
-    const queryFields = Object.keys(fields).map(field => `${field} = ?`).join(', ');
-
-    // Met à jour les champs de l'image avec l'ID spécifié dans la base de données
-    db.run(`UPDATE images SET ${queryFields} WHERE id = ?`, [...queryParams, id], function (err) {
-        if (err) {
-            console.error("Error updating image:", err.message);
-            // Envoie une réponse à l'événement "update-image-info-reply" avec le statut de mise à jour
-            event.reply("update-image-info-reply", { success: false });
-            return;
-        }
-        console.log(`Updated info for image with id ${id}`);
-        // Envoie une réponse à l'événement "update-image-info-reply" avec le statut de mise à jour
-        event.reply("update-image-info-reply", { success: true });
-    });
-});
 
 // Ajoutez une nouvelle écoute pour l'événement "get-skyobjects"
 ipcMain.on('get-skyobjects', (event) => {
@@ -432,64 +421,10 @@ ipcMain.on('export-db-to-json', (event) => {
 
 
 ipcMain.on('start-blink', (event, imagePaths) => {
-    const scriptName = process.env.NODE_ENV === 'development' ? 'blink.py' : 'blink'; // Nom du script avec extension pour le développement
-    const scriptPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './python', './blink', scriptName);
-
-
-    console.log(imagePaths)
-
-    exec(`"${scriptPath}" ${imagePaths.map(path => `"${path}"`).join(' ')}`, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Erreur lors de l'exécution du script: ${error}`);
-            event.reply('blink-error', error.message);
-
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Erreur',
-                message: `Erreur lors de l'exécution du script: ${error.message}`
-            });
-            return;
-
-        }
-
-        const convertedPaths = stdout.trim().split('\n');
-        event.sender.send('images-converted', convertedPaths);
-
-        
-        console.log(`stdout: ${stdout}`);
-        console.error(`stderr: ${stderr}`);
-    });
+   
 });
 
 
-
-// Gestionnaire d'événements pour l'événement "open-image" envoyé depuis le processus de rendu
-ipcMain.on('open-fit-file', (event, imagePath) => {
-
-    const scriptName = process.env.NODE_ENV === 'development' ? 'open_image.py' : 'open_image';
-    const scriptPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './python', './open_image', scriptName);
-
-    exec(`"${scriptPath}" "${imagePath}"`, (error, stdout, stderr) => {
-
-        if (error) {
-            console.error(`Erreur lors de l'exécution du script Python : ${error}`);
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Erreur',
-                message: `Erreur lors de l'exécution du script: ${error.message}`
-            });
-            return;
-        }
-
-        console.log(`Résultat : ${stdout}`);
-        console.log(`Error : ${stderr}`);
-        // Traitement supplémentaire si nécessaire
-    });
-});
 
 // Gestionnaire d'événements pour l'événement "open-in-finder" envoyé depuis le processus de rendu
 ipcMain.on('open-in-finder', (event, filePath) => {
@@ -497,47 +432,8 @@ ipcMain.on('open-in-finder', (event, filePath) => {
 });
 
 // Export image in JPG
-ipcMain.on('export-image', async (event, filePath) => {
+ipcMain.on('export-image',  (event, filePath) => {
     console.log("Reçu export-image", filePath);
-
-    try {
-        const { filePath: savePath } = await dialog.showSaveDialog({
-            title: 'Exporter l\'image',
-            defaultPath: path.basename(filePath, path.extname(filePath)) + '.jpeg',
-            filters: [{ name: 'Images', extensions: ['jpeg'] }]
-        });
-
-        if (!savePath) {
-            event.reply('export-image-cancelled');
-            return;
-        }
-
-        const scriptName = process.env.NODE_ENV === 'development' ? 'export-convert.py' : 'export-convert';
-        const scriptPath = process.env.NODE_ENV === 'development'
-            ? path.join(__dirname, scriptName)
-            : path.join(process.resourcesPath, './python', './export-convert', scriptName);
-
-        exec(`"${scriptPath}" "${filePath}" "${savePath}"`, (error, stdout, stderr) => {
-            if (error || stderr) {
-                console.error('Erreur lors de l\'exportation de l\'image:', error || stderr);
-                dialog.showErrorBox('Erreur d\'exportation', 'Une erreur est survenue lors de l\'exportation de l\'image.');
-                event.reply('export-image-failure', error ? error.message : stderr);
-                return;
-            }
-
-            console.log('Image convertie avec succès:', stdout);
-            dialog.showMessageBox({
-                type: 'info',
-                title: 'Exportation réussie',
-                message: 'L\'image a été exportée avec succès.',
-            });
-            event.reply('export-image-success', savePath);
-        });
-    } catch (error) {
-        console.error('Erreur lors de l\'ouverture du dialogue de sauvegarde:', error);
-        dialog.showErrorBox('Erreur de dialogue', 'Une erreur est survenue lors de l\'ouverture du dialogue de sauvegarde.');
-        event.reply('export-image-failure', error.message);
-    }
 });
 
 // Resize Windows app after Login
@@ -608,52 +504,101 @@ ipcMain.on('convert-raw', (event, imagePath) => {
 
 
 
-// Converter Fit
 ipcMain.on('convert', (event, imagePath) => {
+    console.log(`Reçu une demande de conversion pour : ${imagePath}`);
+    queue.push({ event, imagePath }); // Ajouter à la file d'attente
+    console.log(`File d'attente actuelle : ${queue.length}`);
+    processQueue(); // Essayer de traiter la file d'attente
+});
 
-    // Déterminer le chemin de sortie dans le dossier 'convertedImage'
 
-    // Assurez-vous que le dossier 'convertedImage' existe
-    if (!fs.existsSync(convertedImagesPath)) {
-        fs.mkdirSync(convertedImagesPath, { recursive: true });
+
+const queue = []; // File d'attente pour la conversion des images
+let isProcessing = false; // Indicateur pour savoir si une conversion est en cours
+
+function processQueue() {
+    if (queue.length === 0) {
+        console.log("Aucun élément dans la file d'attente à traiter.");
+        return; // Rien à traiter
+    }
+    if (isProcessing) {
+        console.log("Un traitement est déjà en cours. Attente...");
+        return; // Traitement déjà en cours
     }
 
-    const outputFilename = path.basename(imagePath).replace('.fits', '.webp').replace('.fit', '.webp');
+    console.log("Début du traitement de la file d'attente.");
+    isProcessing = true;
+    const { event, imagePath } = queue.shift(); // Prendre le premier élément
+    console.log(`Traitement de l'image : ${imagePath}`);
+
+    let outputFilename;
+    const ext = path.extname(imagePath).toLowerCase();
+    if (['.fits', '.fit', '.tif', '.tiff'].includes(ext)) {
+        // Remplacer les extensions FITS et TIFF par .png pour la conversion
+        outputFilename = path.basename(imagePath).replace(ext, '.png');
+    } else {
+        // Autres formats (PNG, JPG, JPEG, etc.) peuvent rester inchangés ou être traités différemment
+        outputFilename = path.basename(imagePath);
+    }
+
     const outputImagePath = path.join(convertedImagesPath, outputFilename);
 
+    const outputThumbnailname = path.basename(imagePath).replace(path.extname(imagePath), '.webp');
+    const outputThumbnailPath = path.join(thumbnailsPath, outputThumbnailname);  // Ajoutez cette ligne
 
-    const scriptName = process.env.NODE_ENV === 'development' ? 'converter.py' : 'converter'; // Nom du script avec extension pour le développement
-    const scriptPath = process.env.NODE_ENV === 'development'
-        ? path.join(__dirname, scriptName)
-        : path.join(process.resourcesPath, './python', './converter', scriptName);
-
-
-    exec(`"${scriptPath}" "${imagePath}" "${outputImagePath}"`, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Erreur de conversion: ${error}`);
-            event.reply('conversion-error', error.message);
-
-            dialog.showMessageBox({
-                type: 'error',
-                title: 'Erreur',
-                message: `Erreur lors de l'exécution du script: ${error.message}`
-            });
-
-            return;
+    const worker = new Worker(path.join(__dirname, 'convertWorker.js'), {
+        workerData: {
+            scriptPath: getScriptPath(),
+            imagePath: imagePath,
+            outputImagePath: outputImagePath,
+            outputThumbnailPath: outputThumbnailPath  // Ajoutez cette ligne
         }
+    });
 
-        const convertedPath = stdout.trim();
-        console.log(`Conversion réussie : ${convertedPath}`);
 
-        // Mise à jour de la base de données avec le chemin de l'image convertie
-        db.run(`UPDATE images SET convertPath = ? WHERE path = ?`, [convertedPath, imagePath], function (err) {
+    worker.on('message', ({ convertedPath, thumbnailPath, imagePath }) => {
+        console.log(`Conversion réussie : ${imagePath}`);
+        console.log(`covertedpath : ${convertedPath}`);
+        console.log(`thumbnailPath : ${thumbnailPath}`);
+        // Utilisez convertedPath et thumbnailPath ici
+        db.run(`UPDATE images SET convertPath = ?, thumbnailPath = ? WHERE path = ?`, [convertedPath, thumbnailPath, imagePath], function (err) {
             if (err) {
-                // Vous pouvez choisir de notifier l'interface utilisateur de cette erreur
+                event.reply('db-update-error', err.message);
+                isProcessing = false;
+                processQueue(); // Continue avec le prochain élément si une erreur se produit
                 return;
             }
-            // Répondre au frontend que la conversion est terminée et que la DB est mise à jour
-            event.reply('conversion-done', { imagePath: imagePath, convertedPath: convertedPath });
+
+            // Répondre au frontend que la conversion est terminée et que la base de données est mise à jour
+            event.reply('conversion-done', { imagePath: imagePath, convertedPath: convertedPath, thumbnailPath: thumbnailPath });
+            isProcessing = false;
+            processQueue(); // Traitement du prochain élément dans la file d'attente
         });
     });
-});
+
+    worker.on('error', (error) => {
+
+        console.error(`Erreur dans le worker: ${error.message}`);
+        event.reply('conversion-error', error.message);
+        isProcessing = false;
+        processQueue();
+    });
+
+    worker.on('exit', (code) => {
+        if (code !== 0) {
+            console.error(new Error(`Worker stopped with exit code ${code}`));
+        } else {
+            console.log(`Worker terminé avec succès pour ${imagePath}`);
+        }
+        isProcessing = false;
+        processQueue();
+    });
+}
+
+function getScriptPath() {
+    return process.env.NODE_ENV === 'development'
+        ? path.join(__dirname, 'converter.py')
+        : path.join(process.resourcesPath, './python', './converter', 'converter');
+}
+
 

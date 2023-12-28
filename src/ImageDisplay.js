@@ -1,44 +1,63 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { format, parse } from 'date-fns';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Notification from './notification';
+import Table from './Table'
+import FullScreenImage from './FullScreenImage';
 
-const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate, setSelectedImages }) => {
+const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate, setSelectedImages, imageSize, width }) => {
+
 
 
     const [convertedImages, setConvertedImages] = useState({});
     const [loadingImages, setLoadingImages] = useState({});
     const [showNotification, setShowNotification] = useState(false);
+    const [selectedImagePath, setSelectedImagePath] = useState(null);
 
-    const [imageLimit, setImageLimit] = useState(100); // Limite initiale de 50 images
+    const [imageLimit, setImageLimit] = useState(100);
 
 
 
-    const convertImage = (imagePath) => {
+    const LoadingSpinner = () => {
+        return (
+            <svg className="spinner" viewBox="0 0 50 50">
+                <circle className="path" cx="25" cy="25" r="20" fill="none" strokeWidth="5"></circle>
+            </svg>
+        );
+    };
+
+
+
+    const convertImage = useCallback((imagePath) => {
         if (!convertedImages[imagePath]) {
             setLoadingImages(prev => ({ ...prev, [imagePath]: true }));
-            if (imagePath.endsWith('.cr2') || imagePath.endsWith('.nef') || imagePath.endsWith('.arw')) { // Ajoutez d'autres extensions RAW si nécessaire
+            if (imagePath.endsWith('.cr2') || imagePath.endsWith('.nef') || imagePath.endsWith('.arw')) {
                 window.electron.ipcRenderer.send('convert-raw', imagePath);
             } else if (imagePath.endsWith('.tif')) {
                 window.electron.ipcRenderer.send('convert', imagePath);
+                // Gère les formats PNG, JPG, JPEG
             } else {
                 window.electron.ipcRenderer.send('convert', imagePath);
             }
         }
-    };
+    }, [convertedImages]);
 
 
-    // Fonction pour charger plus d'images
-    const loadMoreImages = () => {
-        setImageLimit(prevLimit => prevLimit + 50); // Augmente la limite de 50
-    };
+    // Charger les images FITS
+    const getImageSrc = useCallback((image) => {
+        return convertedImages[image.path] || image.path;
+    }, [convertedImages]);
+
+
+    const loadMoreImages = useCallback(() => {
+        setImageLimit(prevLimit => prevLimit + 50);
+    }, []);
+
 
     // Modifier la logique de rendu pour afficher un nombre limité d'images
-    const limitedSortedImages = () => {
-        const allImages = sortedImages();
-        return allImages.slice(0, imageLimit); // Affiche uniquement un nombre limité d'images
-    };
-
+    const limitedSortedImages = useCallback(() => {
+        return sortedImages().slice(0, imageLimit);
+    }, [sortedImages, imageLimit]);
 
 
     useEffect(() => {
@@ -46,9 +65,9 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
         const limitedImages = limitedSortedImages();
 
         limitedImages.forEach(image => {
-            if (image.convertPath) {
+            if (image.thumbnailPath) {
                 // Utilisez convertPath si disponible
-                setConvertedImages(prev => ({ ...prev, [image.path]: image.convertPath }));
+                setConvertedImages(prev => ({ ...prev, [image.path]: image.thumbnailPath }));
             } else if (!convertedImages[image.path]) {
                 // Vérifiez l'extension du fichier et déclenchez la conversion si nécessaire
                 if (image.path.endsWith('.fit') || image.path.endsWith('.fits')) {
@@ -56,16 +75,19 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                 } else if (image.path.endsWith('.tif') || image.path.endsWith('.tiff')) {
                     convertImage(image.path, 'tif');
                 } else if (image.path.endsWith('.cr2') || image.path.endsWith('.arw') /* Ajoutez d'autres extensions RAW si nécessaire */) {
-                    convertImage(image.path, 'raw');
+                    convertImage(image.path, 'raw')
+                } else if (image.path.endsWith('.jpg') || image.path.endsWith('.jpeg') || image.path.endsWith('.png') || image.path.endsWith('.webp')) {
+                    // Ajouter ici le traitement pour JPG, PNG, et WEBP
+                    convertImage(image.path, 'jpg'); // Utilisez un argument spécifique pour ces formats
+
                 }
             }
         });
 
 
-
-        const conversionListener = (event, { imagePath, convertedPath }) => {
-            console.log("Conversion terminée:", imagePath, convertedPath);
-            setConvertedImages(prev => ({ ...prev, [imagePath]: convertedPath }));
+        const conversionListener = (event, { imagePath, convertedPath, thumbnailPath }) => {
+            console.log("Conversion terminée:", imagePath, thumbnailPath);
+            setConvertedImages(prev => ({ ...prev, [imagePath]: thumbnailPath }));
             setLoadingImages(prev => ({ ...prev, [imagePath]: false })); // Mettre à jour l'état de chargement
         };
 
@@ -79,10 +101,6 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
 
 
-    // Charger les images FITS
-    const getImageSrc = (image) => {
-        return convertedImages[image.path] || image.path;
-    };
 
 
     const DateEnLettres = ({ dateKey }) => {
@@ -100,26 +118,24 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
 
 
     const handleImageDoubleClick = (image) => {
-        if (image.path.endsWith('.fit') || image.path.endsWith('.fits')) {
-            window.electron.ipcRenderer.send('open-fit-file', image.path);
-            setShowNotification(true);  // Activer la notification
-            setTimeout(() => setShowNotification(false), 3000);  // Désactiver après 3 secondes
-
-            console.log(image.path)
-        } else {
-            window.electron.ipcRenderer.send('open-default-app', image.path);
-        }
+        const imagePath = image.path.endsWith('.fit') || image.path.endsWith('.fits') || image.path.endsWith('.tif') || image.path.endsWith('.tiff')
+            ? image.convertPath
+            : image.path;
+        setSelectedImagePath(imagePath);
     };
 
 
 
 
-    const renderImage = (image) => {
+
+    const renderImage = useCallback((image) => {
         const isImageLoading = loadingImages[image.path];
         const isSelectedClass = isSelected(image) ? 'selected' : '';
 
         return isImageLoading ? (
-            <div className="skeleton"></div>
+            <div className="skeleton">
+                <LoadingSpinner />
+            </div>
         ) : (
             <div className={`image-container ${isSelectedClass}`} onClick={(e) => handleImageClick(image, e)}>
                 <img
@@ -128,9 +144,9 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                     key={image.id}
                     src={getImageSrc(image)}
                     alt={`Image de ${image.name}`}
-                    style={{ width: 'auto', height: '100px' }}
+                    style={{ width: 'auto', height: imageSize + 'px' }}
                 />
-               
+
                 <input
                     type="checkbox"
                     className="image-checkbox round-checkbox"
@@ -140,7 +156,8 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                 />
             </div>
         );
-    };
+    }, [loadingImages, isSelected, handleImageClick, imageSize]); // Ajoutez les dépendances nécessaires
+
 
 
     const handleCheckboxChange = (image, event) => {
@@ -180,11 +197,21 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
     }, [imageLimit]); // Ajoutez les dépendances nécessaires
 
 
+    const widthStr = width + 'px'; // Si width est un nombre
 
 
 
     return (
         <div className="container" ref={containerRef}>
+
+            {selectedImagePath &&
+                <FullScreenImage
+                    imagePath={selectedImagePath}
+                    onClose={() => setSelectedImagePath(null)}
+                />
+            }
+
+
 
             {limitedSortedImages().length === 0 ? (
                 // Afficher cette div si aucune image n'est présente
@@ -232,70 +259,18 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                         </div>
                     ))
                 ) : (
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Image</th>
-                                <th>Nom</th>
-                                <th>Type</th>
-                                <th>Date</th>
-                                <th>Objet</th>
-                                <th>Lieu</th>
-                                <th>Constellation</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {limitedSortedImages().map(image => (
-                                <tr onClick={(e) => handleImageClick(image, e)}
-                                    key={image.id}
-                                >
-                                    <td className={isSelected(image) ? 'focus' : ''}  >
 
-                                        <img
-                                            key={image.id}
-                                            src={getImageSrc(image)}
-                                            alt={image.name}
-                                            style={{ height: "30px", width: 'auto' }}
-                                        />
+                    <Table
 
-                                    </td>
-                                    <td className={isSelected(image) ? 'focus' : ''} >{image.name}</td>
-                                    <td className={isSelected(image) ? 'focus' : ''} >{image.photoType}</td>
-                                    <td className={isSelected(image) ? 'focus' : ''} style={{ whiteSpace: 'nowrap' }}>{formatDate(image.date)}</td>
-                                    <td className={isSelected(image) ? 'focus' : ''}>{image.skyObject}</td>
-                                    <td className={isSelected(image) ? 'focus' : ''} >{image.location}</td>
-                                    <td className={isSelected(image) ? 'focus' : ''} >{image.constellation}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                        data={limitedSortedImages()} // Assurez-vous que c'est un tableau d'objets
+                        handleImageClick={handleImageClick}
+                        isSelected={isSelected}
+                        formatDate={formatDate}
+                    />
+
                 )
 
             )}
-
-            {/*}
-            {selectedImage && (
-                <div
-                    className="fullscreen-image-container"
-
-                    onMouseMove={handleMouseMove}
-                    onMouseUp={handleMouseUp}
-                >
-                    <img
-                        src={getImageSrc(selectedImage)}
-                        alt={`Image agrandie`}
-                        className="fullscreen-image"
-                        onWheel={handleWheel}
-                        onMouseDown={handleMouseDown}
-                        style={{
-                            transform: `scale(${scale}) translate(${position.x}px, ${position.y}px)`,
-                            cursor: isDragging ? 'grabbing' : 'grab',
-                            transition: 'none'  // Supprime l'effet de lissage
-                        }}
-                    />
-                </div>
-            )}
-            */}
 
 
             {showNotification && (

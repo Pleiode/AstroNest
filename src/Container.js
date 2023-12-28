@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 
-import { Grid, List, Download } from 'react-feather';
+import { Grid, List, Download, X } from 'react-feather';
 import DetailsPanel from "./DetailsPanel";
 import ImageDisplay from "./ImageDisplay";
 import Notification from "./notification";
@@ -55,6 +55,44 @@ const Container = () => {
 
     const [showNotificationFirstEdit, setShowNotificationFirstEdit] = useState(false);
 
+    const savedImageSize = localStorage.getItem('imageSize') || '100';
+    const [imageSize, setImageSize] = useState(savedImageSize);
+
+
+
+    const useResizablePanel = (defaultWidth) => {
+        const [width, setWidth] = useState(
+            () => localStorage.getItem('panelWidth') || defaultWidth
+        );
+
+        const handleMouseMove = useCallback((e) => {
+            const newWidth = window.innerWidth - e.clientX;
+            setWidth(newWidth);
+        }, []);
+
+        const handleMouseUp = useCallback(() => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }, [handleMouseMove]);
+
+        const startResizing = useCallback(() => {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }, [handleMouseMove, handleMouseUp]);
+
+        useEffect(() => {
+            localStorage.setItem('panelWidth', width);
+        }, [width]);
+
+        return { width, startResizing };
+    };
+
+    // Dans votre composant
+    const { width, startResizing } = useResizablePanel(300);
+
+    // Utiliser `width` et `startResizing` comme nécessaire dans votre composant
+
+
 
     // State for tracking the type of image being uploaded
     const isSelected = (image) => {
@@ -79,6 +117,11 @@ const Container = () => {
     };
 
 
+    const handleSliderChange = (event) => {
+        const newSize = event.target.value;
+        setImageSize(newSize);
+        localStorage.setItem('imageSize', newSize); // Enregistrez la nouvelle taille dans le localStorage
+    };
 
 
 
@@ -111,28 +154,36 @@ const Container = () => {
         setSortOrder(objectSort === 'all' ? 'date-desc' : 'skyObject');
     }, [objectSort]);
 
-    const sortedImages = () => {
-        let sorted = [...images];
-        if (sortOrder === 'date-asc') {
-            sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
-        } else if (sortOrder === 'date-desc') {
-            sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
-        }
 
-        if (TypeSort !== 'all') {
-            sorted = sorted.filter(img => img.photoType === TypeSort);
-        }
+    const filterImagesBySearchTerm = (images, searchTerm) => {
+        const searchTerms = searchTerm.toLowerCase().split(" "); // Divise la chaîne en mots
+
+        return images.filter(image => {
+            return searchTerms.every(term =>
+                (image.name && image.name.toLowerCase().includes(term)) ||
+                (image.skyObject && image.skyObject.toLowerCase().includes(term)) ||
+                (image.objectType && image.objectType.toLowerCase().includes(term)) ||
+                (image.constellation && image.constellation.toLowerCase().includes(term)) ||
+                (image.location && image.location.toLowerCase().includes(term)) ||
+                (image.photoType && image.photoType.toLowerCase().includes(term)) ||
+                (image.instrument && image.instrument.toLowerCase().includes(term)) ||
+                (image.opticalTube && image.opticalTube.toLowerCase().includes(term)) ||
+                (image.mount && image.mount.toLowerCase().includes(term)) ||
+                (image.camera && image.camera.toLowerCase().includes(term)) ||
+                (image.note && image.note.toLowerCase().includes(term))
+            );
+        });
+    };
+
+
+    const sortedImages = () => {
         if (searchTerm) {
-            const lowerCaseSearchTerm = searchTerm.toLowerCase();
-            return sorted.filter(img => {
-                return Object.values(img).some(value =>
-                    String(value).toLowerCase().includes(lowerCaseSearchTerm)
-                );
-            });
+            return filterImagesBySearchTerm(images, searchTerm);
         } else {
-            return objectSort === 'all' ? sorted : sorted.filter(img => img.skyObject === objectSort);
+            return images; // Retourne toutes les images si aucun terme de recherche n'est spécifié
         }
     };
+
 
     useEffect(() => {
         const { ipcRenderer } = window.electron;
@@ -444,15 +495,20 @@ const Container = () => {
         // Rétablissez le style d'origine ici
     };
 
-    const onSearchChange = (newSearchTerm) => {
-        setSearchTerm(newSearchTerm);
 
+    const onSearchChange = (e) => {
+        setSearchTerm(e.target.value);
     };
 
 
+    // Efface le champ de recherche
+    const clearSearch = () => {
+        setSearchTerm('');
+    };
 
     return (
-        <div onDragOver={handleDragOver}
+        <div
+            onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragEnter={handleDragEnter}
             onDragLeave={handleDragLeave}
@@ -466,13 +522,20 @@ const Container = () => {
                 >
 
                     {/*// Champ de recherche pour saisir un terme */}
-                    <input
-                        type="text"
-                        className="search-input"
-                        placeholder="Rechercher par objet, titre, lieu..."
-                        value={searchTerm} // La valeur du champ est contrôlée par le prop 'searchTerm'
-                        onChange={e => onSearchChange(e.target.value)} // Quand la valeur change, la fonction 'onSearchChange' est appelée avec la nouvelle valeur
-                    />
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            className="search-input"
+                            placeholder="Rechercher par objet, titre, lieu..."
+                            value={searchTerm}
+                            onChange={onSearchChange} />
+                        {searchTerm && (
+                            <button className="clear-input" onClick={clearSearch}>
+                                <X size={'18px'} />
+                            </button>
+                        )}
+                    </div>
+
 
                     {/*// Bouton pour importer des fichiers */}
                     <button className='secondary' onClick={handleImportClick}>
@@ -492,8 +555,10 @@ const Container = () => {
                 </header>
             </div>
 
-            <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ width: '100%' }}>
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'row' }}>
+
+
+                <div style={{ width: '100%', flexGrow: '1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '18px' }}>
                         <div style={{ display: 'flex', gap: '8px' }}>
                             <label>
@@ -516,14 +581,35 @@ const Container = () => {
                             </label>
                         </div>
 
-                        <div className="switch-container" onClick={() => setViewMode(prevMode => prevMode === 'grid' ? 'list' : 'grid')}>
-                            <span className={`switch-label ${viewMode === 'grid' ? 'active' : ''}`}> <Grid strokeWidth={2} width={'16px'} /> Grille</span>
-                            <span className={`switch-label ${viewMode === 'list' ? 'active' : ''}`}> <List strokeWidth={2} width={'16px'} /> Liste</span>
+
+                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '24px' }} >
+
+
+                            <div class="slider-container">
+                                <input
+                                    type="range"
+                                    min="50"    // Minimum size
+                                    max="200"   // Maximum size
+                                    value={imageSize}
+                                    onChange={handleSliderChange}
+                                    className="image-size-slider"
+                                />
+                            </div>
+
+
+
+                            <div className="switch-container" onClick={() => setViewMode(prevMode => prevMode === 'grid' ? 'list' : 'grid')}>
+                                <span className={`switch-label ${viewMode === 'grid' ? 'active' : ''}`}> <Grid strokeWidth={2} width={'16px'} /> Grille</span>
+                                <span className={`switch-label ${viewMode === 'list' ? 'active' : ''}`}> <List strokeWidth={2} width={'16px'} /> Liste</span>
+                            </div>
+
                         </div>
+
 
                     </div>
 
                     <ImageDisplay
+                        width={width}
                         viewMode={viewMode}
                         sortedImages={sortedImages}
                         groupBy={groupBy}
@@ -532,14 +618,18 @@ const Container = () => {
                         isSelected={isSelected}
                         formatDate={formatDate}
                         setSelectedImages={setSelectedImages}
-
+                        imageSize={imageSize}
                     />
 
                 </div>
 
-
+                <div
+                    className="section-details-resize"
+                    onMouseDown={startResizing}
+                ></div>
 
                 <DetailsPanel
+                    width={width}
                     isSelected={isSelected}
                     sortedImages={sortedImages}
                     selectedImage={selectedImages[0]}
@@ -548,7 +638,6 @@ const Container = () => {
                     handlePathFileChange={handlePathFileChange}
                     selectedImages={selectedImages}
                 />
-
 
             </div>
 

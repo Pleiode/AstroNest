@@ -8,6 +8,7 @@ import Container from './Container';
 import Navbar from './Navbar';
 import Login from './Login';
 
+
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
@@ -16,7 +17,7 @@ const App = () => {
 
   useEffect(() => {
 
- 
+   
 
 
     const premiumStatus = localStorage.getItem('isPremium') === 'true';
@@ -62,10 +63,10 @@ const App = () => {
       localStorage.setItem('isPremium', 'false');
     }
   };
-  
+
 
   if (loading) {
-    return <div style={{display:'flex', justifyContent:'center', alignItems:'center', height:'100vh'}} >Chargement...</div>;
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }} >Chargement...</div>;
   }
 
   if (!isAuthenticated) {
@@ -90,7 +91,8 @@ const App = () => {
   return (
     <div style={{ display: 'flex' }}>
       <Router>
-        <Navbar />
+       {/* <Navbar /> */} 
+        
         <Routes>
           <Route index path="/" element={<Container />} />
         </Routes>

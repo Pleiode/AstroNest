@@ -5,8 +5,8 @@
 :root {
     --bg-color: #191919;
     --color-nav: #262626;
-    --white: #ededed;
-    --grey10: #454545;
+    --white: #e1e1e1;
+    --grey10: #646464;
     /* Removed duplicate --grey10 declaration for cleaner code */
     --grey20: #484848;
     --greyborder: #363636;
@@ -151,7 +151,6 @@ button {
     transition: 0.2s;
     border-radius: 6px;
     font-size: 14px;
-
     color: var(--white);
 }
 
@@ -170,6 +169,14 @@ button.secondary {
     background: #363636;
 }
 
+button.clear-input {
+    border: none;
+    background-color: unset;
+    padding: 10px;
+}
+
+
+
 button.special {
     display: flex;
     padding: 8px 8px;
@@ -177,11 +184,16 @@ button.special {
     gap: 6px;
     border-radius: 6px;
     border: none;
-    font-size: 14px;
-    background-color: var(--greyborder);
+    font-size: 12px;
     font-weight: 400;
     color: white;
-    border: 1px solid #484848;
+    background-color: unset;
+    white-space: nowrap;
+
+}
+
+button.special:hover {
+    background-color: var(--greyborder);
 
 }
 
@@ -197,9 +209,9 @@ button.tertiary {
     padding: 0;
     border: unset;
 }
-         
 
- 
+
+
 button:hover {
     transition: 0.2s;
     filter: brightness(1.2);
@@ -261,6 +273,86 @@ input {
     transition: 0.2s;
 }
 
+.slider-container {
+    position: relative;
+    width: 140px;
+    /* Width must be enough to include the slider and the signs */
+    display: flex;
+    justify-content: center;
+}
+
+
+
+.slider-container::before,
+.slider-container::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--grey10);
+}
+
+.slider-container::before {
+    content: '-';
+    left: 8px;
+    /* Adjust as needed */
+    font-size: 18px;
+}
+
+.slider-container::after {
+    content: '+';
+    right: -2px;
+    /* Adjust as needed */
+    font-size: 18px;
+}
+
+.image-size-slider {
+    -webkit-appearance: none;
+    width: 120px;
+    background: transparent;
+    outline: none;
+    border-radius: 2px;
+    border: none;
+    position: relative;
+    /* This is required to position thumb correctly */
+    z-index: 1;
+    /* Makes sure the slider is above the pseudo-elements */
+}
+
+.image-size-slider:focus {
+    border: none;
+}
+
+.image-size-slider::-webkit-slider-runnable-track {
+    background: var(--grey20);
+    height: 4px;
+    border-radius: 2px;
+}
+
+.image-size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    background: var(--white);
+    margin-top: -4px;
+    /* Adjust this value if necessary to center the thumb */
+    cursor: grab;
+   
+}
+
+.image-size-slider::-webkit-slider-thumb:hover {
+    background: var(--white);
+}
+
+input.image-size-slider:hover {
+    filter: brightness(1);
+}
+
+input.image-size-slider:focus {
+    filter: brightness(1);
+}
+
 input:hover {
     outline: none;
     filter: brightness(1.2);
@@ -272,7 +364,7 @@ input:focus {
     filter: brightness(1.2);
     transition: 0.2s;
     border: #7a78db solid 1px;
-    
+
 }
 
 /* Upload input styling */
@@ -312,13 +404,10 @@ select.input-details {
 }
 
 
-/* Table styling */
 table {
-    border-collapse: separate;
     border-spacing: 0;
     border-radius: 6px;
-    overflow: hidden;
-    width: 100%;
+    overflow: auto;
 }
 
 /* Table, rows, header, and cell styling */
@@ -326,29 +415,57 @@ table,
 th,
 td {
     border: 0.5px solid var(--greyborder);
+    box-sizing: border-box;
+
 }
 
 th {
     background-color: var(--color-nav);
+    position: relative;
+    font-size: 12px;
+    padding: 10px;
+    padding-block: 6px;
+    text-transform: uppercase;
+    white-space: nowrap;
+ 
 }
 
-table thead tr th {
-    text-transform: uppercase;
-    font-size: 12px;
-    padding-block: 6px;
+td {
+    padding: 8px;
+    font-size: 14px;
+    
 }
 
 /* Table cell styling */
 th,
 td {
     font-weight: 400;
-    padding: 0px 12px;
     text-align: left;
-    font-size: 14px;
     color: #a2a2a2;
-    max-width: 100px;
-    overflow: auto;
-    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow-wrap: break-word;
+    min-width: 100px;
+}
+
+/* Styles pour la poignée de redimensionnement */
+.resizer {
+    display: inline-block;
+    width: 5px;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+    z-index: 1;
+    touch-action: none;
+    pointer-events: all;
+}
+
+.resizer:hover {
+    cursor: col-resize;
+}
+
+.isResizing {
+    background: var(--greyborder);
 }
 
 /* Search input specific styling with background image for search icon */
@@ -377,6 +494,38 @@ td {
     cursor: pointer;
 }
 
+.search-container {
+    display: flex;
+    width: 100%;
+}
+
+.search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input {
+    padding-right: 30px;
+    /* Espace pour le bouton de suppression */
+    width: 100%;
+}
+
+.clear-button {
+    position: absolute;
+    right: 5px;
+    /* Ajustez en fonction de votre design */
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.clear-button .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 .search-input:focus {
     transition: 0.2s;
     box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.10);
@@ -402,6 +551,7 @@ td {
     padding-inline: 18px;
     padding-block-end: 5em;
     box-sizing: border-box;
+    width: 100%;
 }
 
 /* Unordered list styling for list items */
@@ -512,8 +662,6 @@ ul {
 /* Focus image style with border and rounded corners */
 .focus-image {
     border: var(--blue10) 1px dashed;
-
-    opacity: 0.7;
     box-sizing: border-box;
 }
 
@@ -521,7 +669,6 @@ ul {
 .close-button {
     position: absolute;
     top: 30px;
-    left: 10px;
     background-color: transparent;
     color: var(--white);
     border: none;
@@ -589,14 +736,12 @@ ul {
     box-sizing: border-box;
     overflow: auto;
     height: calc(100vh - 65px);
-    /* Full height minus header size */
-    width: 40%;
-
+    min-width: 20em;
 }
 
 /* Paragraph styling within the detail section */
 .details-section div p {
-    text-align: right;
+    text-align: left;
     white-space: nowrap;
     width: 30%;
     font-size: 12px;
@@ -669,10 +814,20 @@ ul {
 .section-details {
     padding-inline: 16px;
     padding-block: 16px;
+
 }
 
 .section-details h4 {
     margin: 0;
+}
+
+.section-details-resize {
+    cursor: ew-resize;
+    width: 5px;
+}
+
+.section-details-resize:hover {
+    background-color: var(--greyborder);
 }
 
 
@@ -810,6 +965,9 @@ ul {
     padding-block: 12px;
     background-color: var(--color-nav);
     justify-content: center;
+    white-space: nowrap;
+
+
 }
 
 .btn-export:hover {
@@ -832,9 +990,18 @@ ul {
     background-color: var(--grey20);
     animation: skeleton-loading 1s linear infinite alternate, skeleton-appear 0.2s ease-in-out;
     border-radius: 3px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-
+.skeleton svg {
+    width: 40px;
+    /* Taille du SVG de la barre de progression */
+    height: 40px;
+    position: absolute;
+}
 
 @keyframes skeleton-appear {
     0% {
@@ -846,9 +1013,7 @@ ul {
     }
 }
 
-
 @keyframes skeleton-loading {
-
     0% {
         background-color: var(--color-nav);
     }
@@ -856,9 +1021,44 @@ ul {
     100% {
         background-color: var(--grey10);
     }
-
-
 }
+
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.path {
+    stroke: var(--white);
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+}
+
+@keyframes dash {
+    0% {
+        stroke-dasharray: 1, 150;
+        stroke-dashoffset: 0;
+    }
+
+    50% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -35;
+    }
+
+    100% {
+        stroke-dasharray: 90, 150;
+        stroke-dashoffset: -124;
+    }
+}
+
 
 
 /* Style pour le conteneur de l'image en plein écran */
@@ -946,42 +1146,33 @@ ul {
     background-color: var(--bg-color);
 }
 
-
-.tooltip {
-    position: relative;
-    display: inline-block;
-    cursor: pointer;
-    z-index: 5;
-    
-
-}
-
-.tooltip .tooltip-text {
-    z-index: 1;
+.tooltip-text {
     visibility: hidden;
-    width: 120px;
-    background-color: var(--color-nav);
-    color: var(--white);
+    background-color: black;
+    color: white;
     text-align: center;
     border-radius: 6px;
-    padding: 10px;
+    padding: 5px 0;
     position: absolute;
-    left: 100%;
-    /* Position to the right of the parent */
-    margin-left: 10px;
-    /* Add some space between the tooltip and the parent */
-    top: 150%;
-    transform: translateX(-60%);
-    z-index: 5;
-    font-size: 12px;
-    box-shadow: 0px 4px 12px 0px rgba(0, 0, 18, 0.32);
- 
+    z-index: 1;
+    top: 100%;
+    /* Position juste en dessous du bouton */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Centrer par rapport au bouton */
+    opacity: 0;
+    transition: opacity 0.3s;
+    padding-inline: 8px;
+    white-space: normal;
+    /* Permet au texte de passer à la ligne */
+
 }
 
-.tooltip:hover .tooltip-text {
+.special:hover .tooltip-text {
     visibility: visible;
-  
+    opacity: 1;
 }
+
 
 
 
@@ -1016,31 +1207,45 @@ ul {
 
 .image-container {
     position: relative;
-    display: inline-block; /* Ou un autre display selon la mise en page */
-    box-sizing: border-box; /* Inclut padding et border dans la taille totale */
+    display: inline-block;
+    /* Ou un autre display selon la mise en page */
+    box-sizing: border-box;
+    /* Inclut padding et border dans la taille totale */
     /* Ajustez les valeurs suivantes selon vos besoins */
-    width: auto; /* ou une valeur spécifique si nécessaire */
-    height: auto; /* ou une valeur spécifique si nécessaire */
-    
+    width: auto;
+    /* ou une valeur spécifique si nécessaire */
+    height: auto;
+    /* ou une valeur spécifique si nécessaire */
+
 }
 
 
 .image-checkbox {
-    appearance: none; /* Supprime l'apparence par défaut */
-    width: 24px; /* Taille de la checkbox */
-    height: 24px; /* Taille de la checkbox */
-    border-radius: 50%; /* Rend la checkbox ronde */
-    border: 1px solid #555; /* Bordure de la checkbox */
+    appearance: none;
+    /* Supprime l'apparence par défaut */
+    width: 24px;
+    /* Taille de la checkbox */
+    height: 24px;
+    /* Taille de la checkbox */
+    border-radius: 50%;
+    /* Rend la checkbox ronde */
+    border: 1px solid #555;
+    /* Bordure de la checkbox */
     position: absolute;
-    top: 8px; /* Ajuster en fonction de la taille de l'image */
-    right: 8px; /* Ajuster en fonction de la taille de l'image */
+    top: 8px;
+    /* Ajuster en fonction de la taille de l'image */
+    right: 8px;
+    /* Ajuster en fonction de la taille de l'image */
     opacity: 0;
-    pointer-events: none; /* Empêche la checkbox d'interférer avec les événements de la souris sur l'image */
+    pointer-events: none;
+    /* Empêche la checkbox d'interférer avec les événements de la souris sur l'image */
 }
 
 .image-checkbox:checked {
-    background-color: #8D47FF; /* Couleur de fond lorsque la checkbox est cochée */
-    border: none; /* Optionnel : retirez la bordure lorsqu'elle est cochée */
+    background-color: #8D47FF;
+    /* Couleur de fond lorsque la checkbox est cochée */
+    border: none;
+    /* Optionnel : retirez la bordure lorsqu'elle est cochée */
 }
 
 .image-checkbox:checked::after {
@@ -1049,22 +1254,28 @@ ul {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    height: 20px; /* Taille du SVG */
-    width: 20px; /* Taille du SVG */
+    height: 20px;
+    /* Taille du SVG */
+    width: 20px;
+    /* Taille du SVG */
 }
 
 
 .image-container:hover .image-checkbox,
 .image-container.selected .image-checkbox {
     opacity: 1;
-    pointer-events: auto; /* Restaure les événements de la souris pour la checkbox */
+    pointer-events: auto;
+    /* Restaure les événements de la souris pour la checkbox */
 }
 
 
 img {
-    display: block; /* Élimine tout espace blanc sous l'image */
-    max-width: 100%; /* Assure que l'image ne dépasse pas son conteneur */
-    height: auto; /* Garde le rapport hauteur/largeur original de l'image */
+    display: block;
+    /* Élimine tout espace blanc sous l'image */
+    max-width: 100%;
+    /* Assure que l'image ne dépasse pas son conteneur */
+    height: auto;
+    /* Garde le rapport hauteur/largeur original de l'image */
     transition: 0.1s ease-in-out;
     box-sizing: border-box;
 }
@@ -1078,4 +1289,37 @@ img {
 .image-container.selected {
     box-sizing: border-box;
     background-color: #8d47ff0f;
+}
+
+
+.modale {
+    position: absolute;
+    background-color: var(--color-nav);
+    display: flex;
+    flex-direction: column;
+    padding: 12px 16px;
+    border-radius: 6px;
+    box-shadow: 0px 2px 6px 0px rgba(0, 0, 18, 0.32);
+    overflow: auto;
+    height: 20em;
+    border: 1px solid var(--greyborder);
+}
+
+.modale font {
+    font-size: 12px;
+    color: var(--white);
+    width: 100%;
+}
+
+.modale label {
+    padding-block: 6px;
+    font-size: 12px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.modale input {
+    width: 14px;
 }

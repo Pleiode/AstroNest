@@ -1,6 +1,5 @@
 const path = require('path');
 const { ProvidePlugin } = require('webpack');
-const { Buffer } = require('buffer');
 
 
 module.exports = {
@@ -22,7 +21,7 @@ module.exports = {
                 test: /\.(js|jsx)$/,
                 exclude: /node_modules/,
                 use: ['babel-loader'],
-                
+
             },
         ],
     },
