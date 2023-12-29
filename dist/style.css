@@ -38,6 +38,7 @@ body {
     /* Adding a sans-serif fallback */
     color: var(--white);
     user-select: none;
+    overflow: hidden;
 }
 
 /* Paragraph styling with color and margin for block elements */
@@ -273,6 +274,12 @@ input {
     transition: 0.2s;
 }
 
+
+
+::-webkit-calendar-picker-indicator {
+    filter: invert(1);
+}
+
 .slider-container {
     position: relative;
     width: 140px;
@@ -338,7 +345,7 @@ input {
     margin-top: -4px;
     /* Adjust this value if necessary to center the thumb */
     cursor: grab;
-   
+
 }
 
 .image-size-slider::-webkit-slider-thumb:hover {
@@ -427,13 +434,13 @@ th {
     padding-block: 6px;
     text-transform: uppercase;
     white-space: nowrap;
- 
+
 }
 
 td {
     padding: 8px;
     font-size: 14px;
-    
+
 }
 
 /* Table cell styling */
@@ -736,7 +743,7 @@ ul {
     box-sizing: border-box;
     overflow: auto;
     height: calc(100vh - 65px);
-    min-width: 20em;
+    min-width: 10em;
 }
 
 /* Paragraph styling within the detail section */
@@ -824,6 +831,7 @@ ul {
 .section-details-resize {
     cursor: ew-resize;
     width: 5px;
+    height: calc(100vh - 65px);
 }
 
 .section-details-resize:hover {
@@ -985,8 +993,6 @@ ul {
 
 
 .skeleton {
-    width: 130px;
-    height: 100px;
     background-color: var(--grey20);
     animation: skeleton-loading 1s linear infinite alternate, skeleton-appear 0.2s ease-in-out;
     border-radius: 3px;

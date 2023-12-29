@@ -619,6 +619,8 @@ const Container = () => {
                         formatDate={formatDate}
                         setSelectedImages={setSelectedImages}
                         imageSize={imageSize}
+                        selectedImage={selectedImages}
+                        handleInputChange={handleInputChange}
                     />
 
                 </div>

@@ -5,8 +5,7 @@ import Notification from './notification';
 import Table from './Table'
 import FullScreenImage from './FullScreenImage';
 
-const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate, setSelectedImages, imageSize, width }) => {
-
+const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImageClick, isSelected, formatDate, setSelectedImages, imageSize, width, selectedImages, handleInputChange }) => {
 
 
     const [convertedImages, setConvertedImages] = useState({});
@@ -133,7 +132,7 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
         const isSelectedClass = isSelected(image) ? 'selected' : '';
 
         return isImageLoading ? (
-            <div className="skeleton">
+            <div style={{width: `${imageSize}px`, height: imageSize + 'px' }} className="skeleton">
                 <LoadingSpinner />
             </div>
         ) : (
@@ -261,11 +260,13 @@ const ImageDisplay = ({ viewMode, sortedImages, groupBy, getGroupKey, handleImag
                 ) : (
 
                     <Table
-
+                        selectedImage={selectedImages}
+                        handleInputChange={handleInputChange}
                         data={limitedSortedImages()} // Assurez-vous que c'est un tableau d'objets
                         handleImageClick={handleImageClick}
                         isSelected={isSelected}
                         formatDate={formatDate}
+                        handleImageDoubleClick={handleImageDoubleClick}
                     />
 
                 )

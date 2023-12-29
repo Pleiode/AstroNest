@@ -1,8 +1,21 @@
 import React, { useMemo, useEffect, useState, useRef } from 'react';
 import { useTable, useResizeColumns, useBlockLayout } from 'react-table';
 
-const CustomTable = ({ data, handleImageClick, isSelected, formatDate }) => {
+const CustomTable = ({ data, handleImageClick, isSelected, formatDate, selectedImages, handleInputChange }) => {
     // Récupération des largeurs sauvegardées
+
+    const [selectedImagePath, setSelectedImagePath] = useState(null);
+
+
+
+    const handleImageDoubleClick = (image) => {
+        const imagePath = image.path.endsWith('.fit') || image.path.endsWith('.fits') || image.path.endsWith('.tif') || image.path.endsWith('.tiff')
+            ? image.convertPath
+            : image.path;
+        setSelectedImagePath(imagePath);
+    };
+
+    
     const initializeColumnWidths = () => {
         const savedWidths = localStorage.getItem('columnWidths');
         return savedWidths ? JSON.parse(savedWidths) : {};
@@ -108,8 +121,15 @@ const CustomTable = ({ data, handleImageClick, isSelected, formatDate }) => {
     }, [state.columnResizing.columnWidths, state.columnResizing.isResizingColumn]);
 
 
+
     return (
         <>
+            {selectedImagePath &&
+                <FullScreenImage
+                    imagePath={selectedImagePath}
+                    onClose={() => setSelectedImagePath(null)}
+                />
+            }
 
 
             <table {...getTableProps()} >

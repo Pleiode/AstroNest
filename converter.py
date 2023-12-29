@@ -10,9 +10,9 @@ from PIL import Image
 
 # Constantes pour les valeurs par défaut
 CONTRAST_DEFAULT = 2.0
-BIAS_DEFAULT = 1.0
-
+BIAS_DEFAULT = 0.0
 # Utilisation d'un sémaphore pour limiter les tâches simultanées
+
 semaphore = asyncio.Semaphore(2)
 
 

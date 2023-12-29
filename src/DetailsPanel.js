@@ -71,139 +71,6 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
     };
 
 
-    {/* 
-    window.electron.ipcRenderer.on('images-converted', (event, imagePaths) => {
-        console.log("Chemins des images converties reçus :", imagePaths);
-    
-        let currentIndex = 0;
-        let img = null;
-    
-        // Création du contrôle de niveau de gris
-        const controlsDiv = document.createElement('div');
-        controlsDiv.style.position = 'fixed';
-        controlsDiv.style.top = '10px';
-        controlsDiv.style.left = '10px';
-        controlsDiv.style.zIndex = '2000';
-        controlsDiv.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-        controlsDiv.style.padding = '10px';
-        controlsDiv.style.borderRadius = '5px';
-    
-        function createControl(labelText, id, min, max, value) {
-            const label = document.createElement('label');
-            label.htmlFor = id;
-            label.innerText = labelText + ': ';
-            controlsDiv.appendChild(label);
-    
-            const range = document.createElement('input');
-            range.type = 'range';
-            range.id = id;
-            range.min = min;
-            range.max = max;
-            range.value = value;
-            controlsDiv.appendChild(range);
-            controlsDiv.appendChild(document.createElement('br'));
-    
-            return range;
-        }
-    
-        const grayscaleRange = createControl('Grayscale', 'grayscaleRange', 0, 100, 50); // Valeur initiale de niveau de gris à 50
-    
-        document.body.appendChild(controlsDiv);
-    
-        function applyGrayscaleFilter(imageElement, grayscaleValue) {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-    
-            // Assurez-vous que l'image est chargée avant de continuer
-            imageElement.onload = () => {
-                canvas.width = imageElement.width;
-                canvas.height = imageElement.height;
-                context.drawImage(imageElement, 0, 0);
-    
-                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-    
-                for (let i = 0; i < data.length; i += 4) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-    
-                    // Convertir en niveau de gris en moyennant les canaux RGB
-                    const gray = (r + g + b) / 3;
-    
-                    // Appliquer la valeur de niveau de gris modifiée
-                    data[i] = gray * (grayscaleValue / 100);
-                    data[i + 1] = gray * (grayscaleValue / 100);
-                    data[i + 2] = gray * (grayscaleValue / 100);
-                }
-    
-                context.putImageData(imageData, 0, 0);
-    
-                // Mettre à jour l'image avec le filtre de niveau de gris
-                imageElement.src = canvas.toDataURL();
-            };
-        }
-    
-        function updateImageFilters() {
-            if (img) {
-                const grayscaleValue = grayscaleRange.value; // Assurez-vous que grayscaleValue est entre 0 et 100
-                console.log(`Grayscale: ${grayscaleValue}%`);
-                applyGrayscaleFilter(img, grayscaleValue);
-            }
-        }
-    
-        window.addEventListener('resize', () => {
-            // Redimensionner l'image pour qu'elle remplisse la fenêtre lors du redimensionnement de la fenêtre
-            if (img) {
-                const grayscaleValue = grayscaleRange.value; // Récupérer la valeur de niveau de gris actuelle
-                applyGrayscaleFilter(img, grayscaleValue);
-            }
-        });
-    
-        document.addEventListener('input', (event) => {
-            if (event.target.type === 'range') {
-                updateImageFilters();
-            }
-        });
-    
-        function updateImage() {
-            if (imagePaths.length === 0) {
-                return; // Pas d'images à afficher
-            }
-    
-            if (!img) {
-                img = document.createElement('img');
-                img.style.position = 'fixed';
-                img.style.top = '0';
-                img.style.left = '0';
-                img.style.width = '100%'; // Prend toute la largeur de la fenêtre
-                img.style.height = '100%'; // Prend toute la hauteur de la fenêtre
-                img.style.objectFit = 'cover'; // Remplit la fenêtre sans déformer
-                img.style.zIndex = '1000';  // S'assurer que l'image est au premier plan
-                document.body.appendChild(img);
-            }
-    
-            img.onload = () => {
-                applyGrayscaleFilter(img, grayscaleRange.value); // Appliquer le filtre de niveau de gris
-            };
-    
-            img.src = imagePaths[currentIndex];
-    
-            // Passer à l'image suivante pour le prochain clignotement
-            currentIndex = (currentIndex + 1) % imagePaths.length;
-        }
-    
-        // Démarrer le clignotement
-        updateImage();
-        setInterval(updateImage, 1000); // Change l'image toutes les 2 secondes
-    });
-    
-*/}
-
-
-
-
-
 
     const openInFinder = (filePath) => {
         window.electron.ipcRenderer.send('open-in-finder', filePath);
@@ -239,6 +106,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
 
 
 
+
     return (
         <>
 
@@ -254,7 +122,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                 ) : selectedImages.length === 1 ? (
 
                     <>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock:'10px' }} className='section-details'  >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock: '10px' }} className='section-details'  >
 
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }} >
                                 <button
@@ -505,6 +373,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                             <option value="Quasars">Quasars</option>
                                             <option value="Brown Dwarfs">Brown Dwarfs</option>
                                             <option value="Exoplanets">Exoplanets</option>
+                                            <option value="Globular Clusters">Open Clusters</option>
                                             <option value="Globular Clusters">Globular Clusters</option>
                                         </select>
                                     </div>
@@ -547,10 +416,12 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                         <input
                                             className="input-details"
                                             name="date"
-                                            type="text"
-                                            value={selectedImage.date ? formatDate(selectedImage.date) : ''}
+                                            type="date"  // Modifiez ici de "text" à "date"
+                                            value={selectedImage.date}
                                             onChange={handleInputChange}
                                         />
+
+
                                     </div>
 
                                     <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
@@ -757,7 +628,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                             <div>
 
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock:'10px' }} className='section-details'  >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingBlock: '10px' }} className='section-details'  >
 
                                     <div style={{ display: 'flex', gap: '8px' }} >
                                         <button
@@ -791,7 +662,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                             <Archive
                                                 color="var(--white)"
                                                 size={18}
-                                                strokeWidth={1.5}  />
+                                                strokeWidth={1.5} />
 
                                             <span className="tooltip-text">Open source</span>
 
@@ -806,7 +677,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                             <Share
                                                 color="var(--white)"
                                                 size={18}
-                                                strokeWidth={1.5}  />
+                                                strokeWidth={1.5} />
 
                                             <span className="tooltip-text">Export PNG</span>
 
@@ -819,7 +690,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                             <Trash
                                                 color="var(--white)"
                                                 size={18}
-                                                strokeWidth={1.5}  />
+                                                strokeWidth={1.5} />
 
                                             <span className="tooltip-text">Delete</span>
 
@@ -975,6 +846,7 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
                                                     <option value="Quasars">Quasars</option>
                                                     <option value="Brown Dwarfs">Brown Dwarfs</option>
                                                     <option value="Exoplanets">Exoplanets</option>
+                                                    <option value="Globular Clusters">Open Clusters</option>
                                                     <option value="Globular Clusters">Globular Clusters</option>
                                                 </select>
                                             </div>
@@ -1011,12 +883,15 @@ const DetailsPanel = ({ isSelected, sortedImages, selectedImage, handleInputChan
 
                                             <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>
                                                 <p>Date:</p>
+                                                
+
                                                 <input
                                                     className="input-details"
                                                     name="date"
-                                                    type="text"
+                                                    type="date"  // Modifiez ici de "text" à "date"
                                                     onChange={handleInputChange}
                                                 />
+
                                             </div>
 
                                             <div style={{ display: 'flex', gap: '2px', alignItems: 'center', width: '100%' }}>

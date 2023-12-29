@@ -67,8 +67,8 @@ function createWindow() {
 
     // Options de base pour la fenêtre
     let windowOptions = {
-        width: 1000,
-        height: 650,
+        width: 1200,
+        height: 800,
         minWidth: 800, // Largeur minimale de la fenêtre
         minHeight: 600,
         webPreferences: {
@@ -252,7 +252,10 @@ ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
     const skyObjectString = skyObject.join(', ');
 
     // Initialisation de la variable shotDate avec la date actuelle
-    let shotDate = new Date().toISOString();
+    let shotDate = new Date().toISOString().split('T')[0];
+
+
+
     // Déclaration de l'objet exifData pour stocker les données EXIF
     let exifData = {};
 
@@ -280,7 +283,9 @@ ipcMain.on("image-uploaded", (event, currentUploadingImage) => {
                 // Gestion de la date de prise de vue
                 if (result.tags.DateTimeOriginal) {
                     // Convertit la date EXIF en format ISO si possible
-                    shotDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString();
+                    shotDate = new Date(result.tags.DateTimeOriginal * 1000).toISOString().split('T')[0];
+
+                   
                 }
             }
 
